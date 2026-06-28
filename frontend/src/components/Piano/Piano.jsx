@@ -45,11 +45,9 @@ export default function Piano({
 
   return (
     <div className="piano-container">
-      <div className="piano-frame">
-        <div className="piano">
-          {WHITE_KEYS.map((note) => renderKey(note, false))}
-          {BLACK_KEYS.map((note) => renderKey(note, true))}
-        </div>
+      <div className="piano">
+        {WHITE_KEYS.map((note) => renderKey(note, false))}
+        {BLACK_KEYS.map((note) => renderKey(note, true))}
       </div>
     </div>
   );
