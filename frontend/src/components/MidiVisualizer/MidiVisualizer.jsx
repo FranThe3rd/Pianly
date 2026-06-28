@@ -15,10 +15,83 @@ const HIT_WINDOW_AFTER = 0.25;
 const NOTE_COLOR = {
   white: "hsla(205, 75%, 68%, 0.88)",
   black: "hsla(205, 70%, 42%, 0.92)",
-  whiteHit: "hsla(205, 55%, 58%, 0.4)",
-  blackHit: "hsla(205, 50%, 38%, 0.45)",
   missed: "rgba(220, 70, 70, 0.85)",
 };
+
+const SPARKLE_COUNT = 14;
+const SPARKLE_LIFE = 0.55;
+
+function getNoteLayout(note, currentTime, whiteKeys, width, height) {
+  const hitLine = height - 2;
+  const timeUntil = note.time - currentTime;
+  const progress = 1 - timeUntil / LOOK_AHEAD;
+  const y = progress * hitLine;
+  const noteHeight = Math.max(8, (note.duration / LOOK_AHEAD) * hitLine * 0.4);
+  const keyRect = getKeyRect(note.name, whiteKeys, width);
+  if (!keyRect) return null;
+
+  return {
+    keyRect,
+    x: keyRect.x,
+    y: y - noteHeight,
+    width: keyRect.width,
+    height: noteHeight,
+    centerX: keyRect.x + keyRect.width / 2,
+    centerY: y - noteHeight / 2,
+    isBlack: keyRect.isBlack,
+  };
+}
+
+function spawnHitSparkles(sparkles, layout) {
+  const baseColor = layout.isBlack ? "hsl(205, 75%, 55%)" : "hsl(205, 80%, 78%)";
+
+  for (let i = 0; i < SPARKLE_COUNT; i++) {
+    const angle = (Math.PI * 2 * i) / SPARKLE_COUNT + Math.random() * 0.6;
+    const speed = 1.8 + Math.random() * 3.5;
+
+    sparkles.push({
+      x: layout.centerX + (Math.random() - 0.5) * layout.width * 0.6,
+      y: layout.centerY + (Math.random() - 0.5) * layout.height * 0.4,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1.2,
+      life: 1,
+      decay: 1 / (SPARKLE_LIFE * 60),
+      size: 2 + Math.random() * 3.5,
+      rotation: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 0.18,
+      color: baseColor,
+    });
+  }
+}
+
+function drawSparkle(ctx, particle) {
+  const { x, y, size, life, rotation, color } = particle;
+  const s = size * life;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  ctx.globalAlpha = life * 0.95;
+  ctx.fillStyle = "#fff";
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10 * life;
+  ctx.fillRect(-s * 0.55, -s * 0.12, s * 1.1, s * 0.24);
+  ctx.fillRect(-s * 0.12, -s * 0.55, s * 0.24, s * 1.1);
+  ctx.restore();
+}
+
+function updateSparkles(sparkles) {
+  for (let i = sparkles.length - 1; i >= 0; i--) {
+    const p = sparkles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.07;
+    p.vx *= 0.98;
+    p.rotation += p.spin;
+    p.life -= p.decay;
+    if (p.life <= 0) sparkles.splice(i, 1);
+  }
+}
 
 const { white: whiteKeys } = buildPianoNotes();
 
@@ -39,7 +112,17 @@ function collectNotes(midi) {
   return notes.sort((a, b) => a.time - b.time);
 }
 
-export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
+export default function MidiVisualizer({
+  onKeyStateChange,
+  onKeyPressRef,
+  freePlay = false,
+  onFreePlayToggle,
+  micEnabled = false,
+  onMicToggle,
+  micListening = false,
+  micError = null,
+  micDetectedNote = null,
+}) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const notesRef = useRef([]);
@@ -50,11 +133,13 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
   const awaitingMissRef = useRef(false);
   const activeNotesRef = useRef(new Set());
   const missedNotesRef = useRef(new Set());
+  const sparklesRef = useRef([]);
 
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [waitingForMiss, setWaitingForMiss] = useState(false);
+  const [notesVisible, setNotesVisible] = useState(false);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
 
@@ -64,6 +149,18 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       missed: new Set(missedNotesRef.current),
     });
   }, [onKeyStateChange]);
+
+  const triggerHitSparkle = useCallback((note) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const { width, height } = container.getBoundingClientRect();
+    const currentTime = Tone.getTransport().seconds;
+    const layout = getNoteLayout(note, currentTime, whiteKeys, width, height);
+    if (!layout) return;
+
+    spawnHitSparkles(sparklesRef.current, layout);
+  }, []);
 
   const pauseForMiss = useCallback(
     (missedNotes) => {
@@ -168,7 +265,6 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
     const currentTime = Tone.getTransport().seconds;
     checkMisses(currentTime);
 
-    const hitLine = h - 2;
     const active = new Set();
 
     for (const note of notesRef.current) {
@@ -177,33 +273,34 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
 
       if (timeUntil > LOOK_AHEAD || currentTime > noteEnd + 0.05) continue;
 
-      const keyRect = getKeyRect(note.name, whiteKeys, w);
-      if (!keyRect) continue;
-
-      const progress = 1 - timeUntil / LOOK_AHEAD;
-      const y = progress * hitLine;
-      const noteHeight = Math.max(8, (note.duration / LOOK_AHEAD) * hitLine * 0.4);
-
       const hit = hitIdsRef.current.has(note.id);
       const missed =
         pendingMissIdsRef.current.has(note.id) ||
         (!hit && currentTime > note.time + HIT_WINDOW_AFTER);
 
+      if (hit) continue;
+
       if (currentTime >= note.time && currentTime <= noteEnd && !missed) {
         active.add(note.name);
       }
 
+      const layout = getNoteLayout(note, currentTime, whiteKeys, w, h);
+      if (!layout) continue;
+
       if (missed) {
         ctx.fillStyle = NOTE_COLOR.missed;
-      } else if (hit) {
-        ctx.fillStyle = keyRect.isBlack ? NOTE_COLOR.blackHit : NOTE_COLOR.whiteHit;
       } else {
-        ctx.fillStyle = keyRect.isBlack ? NOTE_COLOR.black : NOTE_COLOR.white;
+        ctx.fillStyle = layout.isBlack ? NOTE_COLOR.black : NOTE_COLOR.white;
       }
 
       ctx.beginPath();
-      ctx.roundRect(keyRect.x, y - noteHeight, keyRect.width, noteHeight, 2);
+      ctx.roundRect(layout.x, layout.y, layout.width, layout.height, 2);
       ctx.fill();
+    }
+
+    updateSparkles(sparklesRef.current);
+    for (const particle of sparklesRef.current) {
+      drawSparkle(ctx, particle);
     }
 
     const prev = activeNotesRef.current;
@@ -219,7 +316,7 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
 
     setProgress(currentTime);
 
-    if (Tone.getTransport().state === "started" || awaitingMissRef.current) {
+    if (Tone.getTransport().state === "started" || awaitingMissRef.current || sparklesRef.current.length > 0) {
       rafRef.current = requestAnimationFrame(draw);
     }
   }, [checkMisses, pushKeyState]);
@@ -235,6 +332,7 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
         if (!match) return false;
 
         hitIdsRef.current.add(match.id);
+        triggerHitSparkle(match);
         pendingMissIdsRef.current.delete(match.id);
 
         const stillPending = notesRef.current.some(
@@ -271,9 +369,10 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       if (!match) return false;
 
       hitIdsRef.current.add(match.id);
+      triggerHitSparkle(match);
       return true;
     },
-    [draw, pushKeyState, resumeAfterMiss]
+    [draw, pushKeyState, resumeAfterMiss, triggerHitSparkle]
   );
 
   useEffect(() => {
@@ -288,7 +387,8 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       await ensurePiano();
 
       if (Tone.getTransport().state !== "started") {
-        if (Tone.getTransport().state !== "paused") {
+        const isFreshStart = Tone.getTransport().state !== "paused";
+        if (isFreshStart) {
           await schedulePlayback();
           Tone.getTransport().seconds = 0;
           hitIdsRef.current = new Set();
@@ -297,7 +397,9 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
           setWaitingForMiss(false);
           activeNotesRef.current = new Set();
           missedNotesRef.current = new Set();
+          sparklesRef.current = [];
           pushKeyState();
+          setNotesVisible(true);
         }
         Tone.getTransport().start();
       }
@@ -322,12 +424,14 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
     clearScheduled();
     setPlaying(false);
     setProgress(0);
+    setNotesVisible(false);
     hitIdsRef.current = new Set();
     pendingMissIdsRef.current = new Set();
     awaitingMissRef.current = false;
     setWaitingForMiss(false);
     activeNotesRef.current = new Set();
     missedNotesRef.current = new Set();
+    sparklesRef.current = [];
     pushKeyState();
     cancelAnimationFrame(rafRef.current);
     const canvas = canvasRef.current;
@@ -336,6 +440,10 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   };
+
+  useEffect(() => {
+    if (freePlay) stop();
+  }, [freePlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onResize = () => {
@@ -361,29 +469,64 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
 
   return (
     <div className="midi-visualizer" ref={containerRef}>
-      <canvas ref={canvasRef} className="midi-canvas" />
-      <div className="midi-hit-line" />
+      <motion.div
+        className="midi-stage"
+        initial={false}
+        animate={{ opacity: notesVisible ? 1 : 0 }}
+        transition={{ duration: 0.55, ease: "easeOut" }}
+      >
+        <canvas ref={canvasRef} className="midi-canvas" />
+        <div className="midi-hit-line" />
+      </motion.div>
 
       <div className="midi-controls">
         <div className="midi-controls-row">
           <button
             type="button"
+            className={freePlay ? "midi-mode-btn active" : "midi-mode-btn"}
+            onClick={onFreePlayToggle}
+          >
+            Free Play
+          </button>
+          <button
+            type="button"
             onClick={play}
-            disabled={!ready || playing || loading || waitingForMiss}
+            disabled={freePlay || !ready || playing || loading || waitingForMiss}
           >
             ▶ Play
           </button>
-          <button type="button" onClick={pause} disabled={!playing || waitingForMiss}>
+          <button
+            type="button"
+            onClick={pause}
+            disabled={freePlay || !playing || waitingForMiss}
+          >
             ⏸ Pause
           </button>
-          <button type="button" onClick={stop} disabled={!ready}>
+          <button type="button" onClick={stop} disabled={freePlay || !ready}>
             ⏹ Stop
+          </button>
+          <button
+            type="button"
+            className={micEnabled ? "midi-mic-btn active" : "midi-mic-btn"}
+            onClick={onMicToggle}
+            title="Use microphone to detect piano notes"
+          >
+            🎤 Mic
           </button>
           <span className="midi-time">
             {formatTime(progress)} / {formatTime(duration)}
           </span>
           {!ready && <span className="midi-loading">Loading MIDI…</span>}
           {loading && <span className="midi-loading">Loading samples…</span>}
+          {micEnabled && micListening && (
+            <span className="midi-mic-status">
+              Listening{micDetectedNote ? `: ${micDetectedNote}` : "…"}
+            </span>
+          )}
+          {micError && <span className="midi-mic-error">{micError}</span>}
+          {freePlay && (
+            <span className="midi-freeplay-hint">Play any key — no timing required</span>
+          )}
         </div>
 
         <AnimatePresence>

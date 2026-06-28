@@ -63,3 +63,21 @@ export function midiToNoteName(midi) {
   const octave = Math.floor(midi / 12) - 1;
   return `${NAMES[midi % 12]}${octave}`;
 }
+
+export function frequencyToNoteName(frequency) {
+  if (!frequency || frequency <= 0) return null;
+  const midi = Math.round(12 * Math.log2(frequency / 440) + 69);
+  if (midi < PIANO_START_MIDI || midi > PIANO_END_MIDI) return null;
+  return midiToNoteName(midi);
+}
+
+export function midiToFrequency(midi) {
+  return 440 * 2 ** ((midi - 69) / 12);
+}
+
+export const PIANO_MIN_FREQ = midiToFrequency(PIANO_START_MIDI);
+export const PIANO_MAX_FREQ = midiToFrequency(PIANO_END_MIDI);
+
+export function isPianoFrequency(frequency) {
+  return frequency >= PIANO_MIN_FREQ && frequency <= PIANO_MAX_FREQ;
+}

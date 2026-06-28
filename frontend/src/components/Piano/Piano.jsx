@@ -9,8 +9,15 @@ export default function Piano({
   activeNotes = new Set(),
   missedNotes = new Set(),
   onKeyPress,
+  micDetectedNote = null,
+  freePlay = false,
 }) {
   const handlePress = async (note) => {
+    if (freePlay) {
+      await onKeyPress?.(note);
+      return;
+    }
+
     const scored = await onKeyPress?.(note);
 
     if (!scored && Tone.getTransport().state !== "started") {
@@ -31,6 +38,7 @@ export default function Piano({
           isBlack ? "black-key" : "white-key",
           activeNotes.has(note) && "active",
           missedNotes.has(note) && "missed",
+          micDetectedNote === note && "mic-detected",
         ]
           .filter(Boolean)
           .join(" ")}

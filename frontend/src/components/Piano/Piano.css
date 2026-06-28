@@ -62,3 +62,8 @@
 .black-key.missed {
   background: #802828;
 }
+
+.piano-key.mic-detected:not(.active):not(.missed) {
+  outline: 2px solid rgba(100, 220, 140, 0.75);
+  outline-offset: -2px;
+}
