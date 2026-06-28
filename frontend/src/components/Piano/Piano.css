@@ -1,0 +1,188 @@
+.piano-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 180px;
+  background: linear-gradient(to bottom, #1a1a1a 0%, #2c2c2c 40%, #111 100%);
+  overflow: hidden;
+  z-index: 1000;
+  border-top: 4px solid #0a0a0a;
+  box-shadow: inset 0 6px 18px rgba(0,0,0,0.8), 0 -2px 6px rgba(0,0,0,0.5);
+}
+
+.piano-lid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 14px;
+  background: linear-gradient(to bottom, #2a2a2a, #111);
+  border-bottom: 2px solid #000;
+  z-index: 20;
+}
+
+.piano {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  padding-top: 14px;
+}
+
+.white-key {
+  flex: 1;
+  height: 100%;
+  background: linear-gradient(to bottom,
+    #f0f0ee 0%,
+    #fafafa 6%,
+    #f8f8f6 30%,
+    #efefed 70%,
+    #e0dedd 85%,
+    #c8c6c4 100%
+  );
+  border-left: 1px solid #aaa;
+  border-right: 1px solid #999;
+  border-bottom: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.04s;
+  border-radius: 0 0 4px 4px;
+  box-shadow:
+    inset 1px 0 0 rgba(255,255,255,0.6),
+    inset -1px 0 0 rgba(0,0,0,0.08),
+    2px 4px 8px rgba(0,0,0,0.35);
+}
+
+.white-key::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 2px;
+  right: 2px;
+  height: 18px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.5), transparent);
+  border-radius: 0 0 3px 3px;
+  pointer-events: none;
+}
+
+.white-key::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.08));
+  border-radius: 0 0 4px 4px;
+  pointer-events: none;
+}
+
+.white-key:first-child {
+  border-left: 1px solid #999;
+}
+
+.white-key:active {
+  background: linear-gradient(to bottom,
+    #dddbd9 0%,
+    #e8e6e4 6%,
+    #e4e2e0 40%,
+    #d4d2d0 70%,
+    #c8c6c4 85%,
+    #b8b6b4 100%
+  );
+  box-shadow:
+    inset 1px 0 0 rgba(255,255,255,0.3),
+    inset -1px 0 0 rgba(0,0,0,0.1),
+    1px 2px 4px rgba(0,0,0,0.3);
+  transform: perspective(200px) rotateX(1.5deg);
+  transform-origin: top center;
+}
+
+.black-key {
+  position: absolute;
+  width: 1.4%;
+  height: 60%;
+  cursor: pointer;
+  z-index: 10;
+  border-radius: 0 0 4px 4px;
+  border: none;
+  background: linear-gradient(160deg,
+    #3a3a3a 0%,
+    #1a1a1a 20%,
+    #0d0d0d 50%,
+    #1a1a1a 80%,
+    #2a2a2a 100%
+  );
+  box-shadow:
+    inset 1px 0 0 rgba(255,255,255,0.08),
+    inset -1px 0 0 rgba(0,0,0,0.5),
+    inset 0 -2px 3px rgba(255,255,255,0.04),
+    2px 6px 10px rgba(0,0,0,0.7),
+    0 2px 4px rgba(0,0,0,0.5);
+  transition: background 0.04s, box-shadow 0.04s;
+}
+
+.black-key::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 15%;
+  right: 15%;
+  height: 45%;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0.12) 0%,
+    rgba(255,255,255,0.04) 60%,
+    transparent 100%
+  );
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.black-key::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20%;
+  background: linear-gradient(to bottom, transparent, rgba(80,60,40,0.15));
+  border-radius: 0 0 4px 4px;
+  pointer-events: none;
+}
+
+.black-key:active {
+  background: linear-gradient(160deg,
+    #2a2a2a 0%,
+    #111 20%,
+    #080808 50%,
+    #111 80%,
+    #1a1a1a 100%
+  );
+  box-shadow:
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.7),
+    1px 3px 6px rgba(0,0,0,0.8);
+  transform: perspective(200px) rotateX(2deg);
+  transform-origin: top center;
+}
+
+.piano-fallboard {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(to bottom, #0a0a0a, #1c1c1c);
+  z-index: 5;
+}
+
+.piano-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to bottom, #0a0a0a, #050505);
+  z-index: 20;
+}
