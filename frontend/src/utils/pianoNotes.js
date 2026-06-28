@@ -7,19 +7,17 @@ const BLACK_ANCHOR = {
   "G#": "G",
   "A#": "A",
 };
-const BLACK_OFFSET = {
-  "C#": 0.55,
-  "D#": 0.75,
-  "F#": 0.5,
-  "G#": 0.65,
-  "A#": 0.8,
-};
-export function buildPianoNotes(startOctave = 1, endOctave = 7) {
+const BLACK_KEY_OFFSET = 0.68;
+const PIANO_START_MIDI = 21; // A0
+const PIANO_END_MIDI = 108; // C8
+
+export function buildPianoNotes(
+  startMidi = PIANO_START_MIDI,
+  endMidi = PIANO_END_MIDI
+) {
   const notes = [];
-  for (let octave = startOctave; octave <= endOctave; octave++) {
-    for (const name of NAMES) {
-      notes.push(`${name}${octave}`);
-    }
+  for (let midi = startMidi; midi <= endMidi; midi++) {
+    notes.push(midiToNoteName(midi));
   }
   return {
     all: notes,
@@ -38,7 +36,8 @@ export function noteToKeyPosition(noteName, whiteKeys) {
     if (whiteIndex === -1) return null;
     const blackWidth = whiteWidth * BLACK_KEY_WIDTH_RATIO;
     return {
-      leftPercent: (whiteIndex + BLACK_OFFSET[sharp]) * whiteWidth - blackWidth / 2,
+      leftPercent:
+        (whiteIndex + BLACK_KEY_OFFSET) * whiteWidth - blackWidth / 2,
       widthPercent: blackWidth,
       isBlack: true,
     };
