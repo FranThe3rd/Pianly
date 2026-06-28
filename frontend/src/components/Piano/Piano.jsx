@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
 import * as Tone from "tone";
+import { buildPianoNotes } from "../../utils/pianoNotes";
 import "./Piano.css";
 
-export default function Piano() {
+export default function Piano({ activeNotes = new Set() }) {
   const sampler = useRef(null);
+  const { white: whiteKeys, black: blackKeys } = buildPianoNotes();
 
   useEffect(() => {
     sampler.current = new Tone.Sampler({
@@ -41,6 +43,8 @@ export default function Piano() {
       },
       baseUrl: "https://tonejs.github.io/audio/salamander/",
     }).toDestination();
+
+    return () => sampler.current?.dispose();
   }, []);
 
   const play = async (note) => {
@@ -48,38 +52,14 @@ export default function Piano() {
     sampler.current?.triggerAttackRelease(note, "8n");
   };
 
-  const notes = [];
-  const names = [
-    "C",
-    "C#",
-    "D",
-    "D#",
-    "E",
-    "F",
-    "F#",
-    "G",
-    "G#",
-    "A",
-    "A#",
-    "B",
-  ];
-
-  for (let octave = 1; octave <= 7; octave++) {
-    for (const name of names) {
-      notes.push(`${name}${octave}`);
-    }
-  }
-
-  const whiteKeys = notes.filter((n) => !n.includes("#"));
-  const blackKeys = notes.filter((n) => n.includes("#"));
-
   return (
     <div className="piano-container">
+      <div className="piano-lid" />
       <div className="piano">
         {whiteKeys.map((note) => (
           <button
             key={note}
-            className="white-key"
+            className={`white-key${activeNotes.has(note) ? " active" : ""}`}
             onMouseDown={() => play(note)}
           />
         ))}
@@ -88,30 +68,32 @@ export default function Piano() {
           const noteName = note.slice(0, -1);
           const octave = Number(note.slice(-1));
 
-          const whiteIndex =
-          whiteKeys.findIndex(
+          const whiteIndex = whiteKeys.findIndex(
             (n) =>
               n ===
-                {
-                  "C#": `C${octave}`,
-                  "D#": `D${octave}`,
-                  "F#": `F${octave}`,
-                  "G#": `G${octave}`,
-                  "A#": `A${octave}`,
-                }[noteName]
+              {
+                "C#": `C${octave}`,
+                "D#": `D${octave}`,
+                "F#": `F${octave}`,
+                "G#": `G${octave}`,
+                "A#": `A${octave}`,
+              }[noteName]
           );
 
           return (
             <button
               key={note}
-              className="black-key"
+              className={`black-key${activeNotes.has(note) ? " active" : ""}`}
               style={{
                 left: `${((whiteIndex + 0.7) / whiteKeys.length) * 100}%`,
-              }}              onMouseDown={() => play(note)}
+              }}
+              onMouseDown={() => play(note)}
             />
           );
         })}
       </div>
+      <div className="piano-fallboard" />
+      <div className="piano-bottom" />
     </div>
   );
 }

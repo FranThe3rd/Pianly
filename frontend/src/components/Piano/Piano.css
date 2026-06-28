@@ -82,7 +82,8 @@
   border-left: 1px solid #999;
 }
 
-.white-key:active {
+.white-key:active,
+.white-key.active {
   background: linear-gradient(to bottom,
     #dddbd9 0%,
     #e8e6e4 6%,
@@ -94,7 +95,8 @@
   box-shadow:
     inset 1px 0 0 rgba(255,255,255,0.3),
     inset -1px 0 0 rgba(0,0,0,0.1),
-    1px 2px 4px rgba(0,0,0,0.3);
+    1px 2px 4px rgba(0,0,0,0.3),
+    0 0 12px rgba(100, 180, 255, 0.5);
   transform: perspective(200px) rotateX(1.5deg);
   transform-origin: top center;
 }
@@ -151,7 +153,8 @@
   pointer-events: none;
 }
 
-.black-key:active {
+.black-key:active,
+.black-key.active {
   background: linear-gradient(160deg,
     #2a2a2a 0%,
     #111 20%,
@@ -162,7 +165,8 @@
   box-shadow:
     inset 1px 0 0 rgba(255,255,255,0.04),
     inset -1px 0 0 rgba(0,0,0,0.7),
-    1px 3px 6px rgba(0,0,0,0.8);
+    1px 3px 6px rgba(0,0,0,0.8),
+    0 0 10px rgba(100, 180, 255, 0.6);
   transform: perspective(200px) rotateX(2deg);
   transform-origin: top center;
 }
