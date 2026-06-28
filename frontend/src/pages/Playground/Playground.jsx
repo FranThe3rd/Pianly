@@ -2,14 +2,18 @@ import { useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import Piano from "../../components/Piano/Piano.jsx";
 import MidiVisualizer from "../../components/MidiVisualizer/MidiVisualizer.jsx";
+import SongSetup from "../../pages/SongSetup/SongSetup.jsx";
 import { useMicPitch } from "../../hooks/useMicPitch";
 import { useMidiKeyboard } from "../../hooks/useMidiKeyboard";
 import { playNote } from "../../audio/pianoAudio";
+import { getSavedSelection, saveSelection } from "../../data/songCatalog";
 
 const ECHO_SUPPRESS_MS = 1100;
 const ECHO_GLOBAL_MS = 400;
 
 export const Playground = () => {
+  const [selection, setSelection] = useState(() => getSavedSelection());
+  const [showSetup, setShowSetup] = useState(() => !getSavedSelection());
   const [keyState, setKeyState] = useState({
     active: new Set(),
     missed: new Set(),
@@ -22,6 +26,12 @@ export const Playground = () => {
   const micSuppressUntilRef = useRef(0);
   const micSuppressNotesRef = useRef(new Map());
   const acceptMicNoteRef = useRef(() => true);
+
+  const handleSongConfirm = useCallback((difficulty, song) => {
+    saveSelection(difficulty, song.id);
+    setSelection({ difficulty, song });
+    setShowSetup(false);
+  }, []);
 
   const suppressMicEcho = useCallback((note) => {
     const now = performance.now();
@@ -118,9 +128,16 @@ export const Playground = () => {
     [freePlay]
   );
 
+  if (showSetup) {
+    return <SongSetup onConfirm={handleSongConfirm} />;
+  }
+
   return (
     <div className="playground-page">
       <MidiVisualizer
+        midiUrl={selection?.song.url}
+        songName={selection?.song.name}
+        onChangeSong={() => setShowSetup(true)}
         onKeyStateChange={handleKeyStateChange}
         onKeyPressRef={keyPressRef}
         freePlay={freePlay}

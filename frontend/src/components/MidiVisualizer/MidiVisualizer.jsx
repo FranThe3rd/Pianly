@@ -6,8 +6,6 @@ import { ensurePiano, playNote, scheduleNote } from "../../audio/pianoAudio";
 import { buildPianoNotes, getKeyRect } from "../../utils/pianoNotes";
 import "./MidiVisualizer.css";
 
-import midiFile from "../../assets/Songs/Naruto Shippūden OST - Byakuya.mid?url";
-
 const LOOK_AHEAD = 4;
 const HIT_WINDOW_BEFORE = 0.2;
 const HIT_WINDOW_AFTER = 0.25;
@@ -113,6 +111,9 @@ function collectNotes(midi) {
 }
 
 export default function MidiVisualizer({
+  midiUrl,
+  songName,
+  onChangeSong,
   onKeyStateChange,
   onKeyPressRef,
   freePlay = false,
@@ -193,19 +194,42 @@ export default function MidiVisualizer({
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    if (!midiUrl) return;
 
-    Midi.fromUrl(midiFile).then((midi) => {
+    let cancelled = false;
+    setReady(false);
+    setLoading(true);
+    setPlaying(false);
+    setNotesVisible(false);
+    setProgress(0);
+    setWaitingForMiss(false);
+    hitIdsRef.current = new Set();
+    pendingMissIdsRef.current = new Set();
+    awaitingMissRef.current = false;
+    activeNotesRef.current = new Set();
+    missedNotesRef.current = new Set();
+    sparklesRef.current = [];
+    notesRef.current = [];
+    Tone.getTransport().stop();
+    Tone.getTransport().seconds = 0;
+    for (const id of scheduledRef.current) {
+      Tone.getTransport().clear(id);
+    }
+    scheduledRef.current = [];
+    pushKeyState();
+
+    Midi.fromUrl(midiUrl).then((midi) => {
       if (cancelled) return;
       notesRef.current = collectNotes(midi);
       setDuration(midi.duration);
       setReady(true);
+      setLoading(false);
     });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [midiUrl, pushKeyState]);
 
   const clearScheduled = useCallback(() => {
     for (const id of scheduledRef.current) {
@@ -488,6 +512,16 @@ export default function MidiVisualizer({
       <div className="midi-controls-anchor">
         <div className="midi-controls">
           <div className="midi-controls-row">
+          {songName && (
+            <span className="midi-song-name" title={songName}>
+              {songName}
+            </span>
+          )}
+          {onChangeSong && (
+            <button type="button" className="midi-change-song-btn" onClick={onChangeSong}>
+              Change song
+            </button>
+          )}
           <button
             type="button"
             className={freePlay ? "midi-mode-btn active" : "midi-mode-btn"}
