@@ -7,7 +7,7 @@ const BLACK_ANCHOR = {
   "G#": "G",
   "A#": "A",
 };
-const BLACK_KEY_OFFSET = 0.68;
+const BLACK_KEY_OFFSET = 1;
 export const PIANO_START_MIDI = 21; // A0
 export const PIANO_END_MIDI = 108; // C8
 
