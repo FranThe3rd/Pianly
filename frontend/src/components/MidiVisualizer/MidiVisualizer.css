@@ -3,7 +3,7 @@
   top: 0;
   left: 0;
   right: 0;
-  bottom: 180px;
+  bottom: 210px;
   background: radial-gradient(ellipse at 50% 0%, #1a2540 0%, #0d0f14 55%, #08090c 100%);
   overflow: hidden;
 }

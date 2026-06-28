@@ -1,5 +1,15 @@
 const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
+export const BLACK_KEY_WIDTH_RATIO = 0.6;
+
+const BLACK_ANCHOR = {
+  "C#": "C",
+  "D#": "D",
+  "F#": "F",
+  "G#": "G",
+  "A#": "A",
+};
+
 export function buildPianoNotes(startOctave = 1, endOctave = 7) {
   const notes = [];
   for (let octave = startOctave; octave <= endOctave; octave++) {
@@ -14,40 +24,45 @@ export function buildPianoNotes(startOctave = 1, endOctave = 7) {
   };
 }
 
-const BLACK_LEFT = {
-  "C#": 0.7,
-  "D#": 1.7,
-  "F#": 3.7,
-  "G#": 4.7,
-  "A#": 5.7,
-};
-
 export function noteToKeyPosition(noteName, whiteKeys) {
-  const isBlack = noteName.includes("#");
-  const octave = Number(noteName.slice(-1));
-  const name = noteName.slice(0, -1);
+  const whiteCount = whiteKeys.length;
+  const whiteWidth = 100 / whiteCount;
 
-  if (isBlack) {
-    const anchor = {
-      "C#": `C${octave}`,
-      "D#": `D${octave}`,
-      "F#": `F${octave}`,
-      "G#": `G${octave}`,
-      "A#": `A${octave}`,
-    }[name];
-
-    const whiteIndex = whiteKeys.indexOf(anchor);
+  if (noteName.includes("#")) {
+    const octave = Number(noteName.slice(-1));
+    const sharp = noteName.slice(0, -1);
+    const anchorName = `${BLACK_ANCHOR[sharp]}${octave}`;
+    const whiteIndex = whiteKeys.indexOf(anchorName);
     if (whiteIndex === -1) return null;
 
-    const left = ((whiteIndex + (BLACK_LEFT[name] ?? 0.7)) / whiteKeys.length) * 100;
-    return { leftPercent: left, widthPercent: 1.4, isBlack: true };
+    const blackWidth = whiteWidth * BLACK_KEY_WIDTH_RATIO;
+    const gapCenter = (whiteIndex + 1) * whiteWidth - whiteWidth * 0.5;
+
+    return {
+      leftPercent: gapCenter - blackWidth / 2,
+      widthPercent: blackWidth,
+      isBlack: true,
+    };
   }
 
   const whiteIndex = whiteKeys.indexOf(noteName);
   if (whiteIndex === -1) return null;
 
-  const width = 100 / whiteKeys.length;
-  return { leftPercent: whiteIndex * width, widthPercent: width, isBlack: false };
+  return {
+    leftPercent: whiteIndex * whiteWidth,
+    widthPercent: whiteWidth,
+    isBlack: false,
+  };
+}
+
+export function getKeyRect(noteName, whiteKeys, totalWidth) {
+  const pos = noteToKeyPosition(noteName, whiteKeys);
+  if (!pos) return null;
+  return {
+    x: (pos.leftPercent / 100) * totalWidth,
+    width: (pos.widthPercent / 100) * totalWidth,
+    isBlack: pos.isBlack,
+  };
 }
 
 export function midiToNoteName(midi) {

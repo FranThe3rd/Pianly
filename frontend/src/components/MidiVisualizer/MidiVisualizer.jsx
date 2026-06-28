@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
-import { buildPianoNotes, midiToNoteName, noteToKeyPosition } from "../../utils/pianoNotes";
+import { ensurePiano, scheduleNote } from "../../audio/pianoAudio";
+import { buildPianoNotes, getKeyRect } from "../../utils/pianoNotes";
 import "./MidiVisualizer.css";
 
 import midiFile from "../../assets/Songs/Naruto Shippūden OST - Byakuya.mid?url";
 
 const LOOK_AHEAD = 4;
+const HIT_WINDOW_BEFORE = 0.2;
+const HIT_WINDOW_AFTER = 0.25;
+const MISS_FLASH_MS = 500;
+
 const { white: whiteKeys } = buildPianoNotes();
 
 function collectNotes(midi) {
@@ -14,6 +19,7 @@ function collectNotes(midi) {
   for (const track of midi.tracks) {
     for (const note of track.notes) {
       notes.push({
+        id: notes.length,
         midi: note.midi,
         time: note.time,
         duration: note.duration,
@@ -25,57 +31,52 @@ function collectNotes(midi) {
   return notes.sort((a, b) => a.time - b.time);
 }
 
-export default function MidiVisualizer({ onActiveNotesChange }) {
+export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const samplerRef = useRef(null);
   const notesRef = useRef([]);
   const rafRef = useRef(null);
   const scheduledRef = useRef([]);
+  const hitIdsRef = useRef(new Set());
+  const missTimersRef = useRef(new Map());
   const activeNotesRef = useRef(new Set());
+  const missedNotesRef = useRef(new Set());
 
   const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    samplerRef.current = new Tone.Sampler({
-      urls: {
-        A0: "A0.mp3",
-        C1: "C1.mp3",
-        "D#1": "Ds1.mp3",
-        "F#1": "Fs1.mp3",
-        A1: "A1.mp3",
-        C2: "C2.mp3",
-        "D#2": "Ds2.mp3",
-        "F#2": "Fs2.mp3",
-        A2: "A2.mp3",
-        C3: "C3.mp3",
-        "D#3": "Ds3.mp3",
-        "F#3": "Fs3.mp3",
-        A3: "A3.mp3",
-        C4: "C4.mp3",
-        "D#4": "Ds4.mp3",
-        "F#4": "Fs4.mp3",
-        A4: "A4.mp3",
-        C5: "C5.mp3",
-        "D#5": "Ds5.mp3",
-        "F#5": "Fs5.mp3",
-        A5: "A5.mp3",
-        C6: "C6.mp3",
-        "D#6": "Ds6.mp3",
-        "F#6": "Fs6.mp3",
-        A6: "A6.mp3",
-        C7: "C7.mp3",
-        "D#7": "Ds7.mp3",
-        "F#7": "Fs7.mp3",
-        A7: "A7.mp3",
-        C8: "C8.mp3",
-      },
-      baseUrl: "https://tonejs.github.io/audio/salamander/",
-    }).toDestination();
+  const pushKeyState = useCallback(() => {
+    onKeyStateChange?.({
+      active: new Set(activeNotesRef.current),
+      missed: new Set(missedNotesRef.current),
+    });
+  }, [onKeyStateChange]);
 
+  const flashMiss = useCallback(
+    (noteName) => {
+      missedNotesRef.current.add(noteName);
+      pushKeyState();
+
+      if (missTimersRef.current.has(noteName)) {
+        clearTimeout(missTimersRef.current.get(noteName));
+      }
+
+      missTimersRef.current.set(
+        noteName,
+        setTimeout(() => {
+          missedNotesRef.current.delete(noteName);
+          missTimersRef.current.delete(noteName);
+          pushKeyState();
+        }, MISS_FLASH_MS)
+      );
+    },
+    [pushKeyState]
+  );
+
+  useEffect(() => {
     let cancelled = false;
 
     Midi.fromUrl(midiFile).then((midi) => {
@@ -87,7 +88,6 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
 
     return () => {
       cancelled = true;
-      samplerRef.current?.dispose();
     };
   }, []);
 
@@ -98,12 +98,30 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
     scheduledRef.current = [];
   }, []);
 
-  const setActiveNotes = useCallback(
-    (next) => {
-      activeNotesRef.current = next;
-      onActiveNotesChange?.(next);
+  const schedulePlayback = useCallback(async () => {
+    clearScheduled();
+    Tone.getTransport().cancel(0);
+    await ensurePiano();
+
+    for (const note of notesRef.current) {
+      const id = Tone.getTransport().schedule((time) => {
+        scheduleNote(note.name, time, note.duration, note.velocity);
+      }, note.time);
+      scheduledRef.current.push(id);
+    }
+  }, [clearScheduled]);
+
+  const checkMisses = useCallback(
+    (currentTime) => {
+      for (const note of notesRef.current) {
+        if (hitIdsRef.current.has(note.id)) continue;
+        if (currentTime <= note.time + HIT_WINDOW_AFTER) continue;
+
+        hitIdsRef.current.add(note.id);
+        flashMiss(note.name);
+      }
     },
-    [onActiveNotesChange]
+    [flashMiss]
   );
 
   const draw = useCallback(() => {
@@ -128,7 +146,9 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
     ctx.clearRect(0, 0, w, h);
 
     const currentTime = Tone.getTransport().seconds;
-    const hitLine = h - 4;
+    checkMisses(currentTime);
+
+    const hitLine = h - 2;
     const active = new Set();
 
     for (const note of notesRef.current) {
@@ -137,32 +157,34 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
 
       if (timeUntil > LOOK_AHEAD || currentTime > noteEnd + 0.05) continue;
 
-      const pos = noteToKeyPosition(note.name, whiteKeys);
-      if (!pos) continue;
+      const keyRect = getKeyRect(note.name, whiteKeys, w);
+      if (!keyRect) continue;
 
       const progress = 1 - timeUntil / LOOK_AHEAD;
       const y = progress * hitLine;
-      const noteHeight = Math.max(6, (note.duration / LOOK_AHEAD) * hitLine * 0.35);
+      const noteHeight = Math.max(8, (note.duration / LOOK_AHEAD) * hitLine * 0.4);
 
-      const x = (pos.leftPercent / 100) * w;
-      const noteWidth = pos.isBlack ? w * 0.014 : (pos.widthPercent / 100) * w - 2;
+      const hit = hitIdsRef.current.has(note.id);
+      const missed = !hit && currentTime > note.time + HIT_WINDOW_AFTER;
 
-      if (currentTime >= note.time && currentTime <= noteEnd) {
+      if (currentTime >= note.time && currentTime <= noteEnd && !missed) {
         active.add(note.name);
       }
 
-      const alpha = pos.isBlack ? 0.92 : 0.85;
       const hue = 200 + (note.midi % 12) * 12;
+      if (missed) {
+        ctx.fillStyle = "rgba(220, 70, 70, 0.85)";
+      } else if (hit) {
+        ctx.fillStyle = `hsla(${hue}, 60%, 55%, 0.45)`;
+      } else {
+        ctx.fillStyle = keyRect.isBlack
+          ? `hsla(${hue}, 75%, 55%, 0.9)`
+          : `hsla(${hue}, 70%, 65%, 0.85)`;
+      }
 
-      ctx.fillStyle = pos.isBlack
-        ? `hsla(${hue}, 75%, 55%, ${alpha})`
-        : `hsla(${hue}, 70%, 65%, ${alpha})`;
-      ctx.shadowColor = `hsla(${hue}, 80%, 50%, 0.4)`;
-      ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.roundRect(x + 1, y - noteHeight, noteWidth, noteHeight, 3);
+      ctx.roundRect(keyRect.x, y - noteHeight, keyRect.width, noteHeight, 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
     }
 
     const prev = activeNotesRef.current;
@@ -172,7 +194,8 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
       [...prev].some((n) => !active.has(n));
 
     if (changed) {
-      setActiveNotes(active);
+      activeNotesRef.current = active;
+      pushKeyState();
     }
 
     setProgress(currentTime);
@@ -180,40 +203,63 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
     if (Tone.getTransport().state === "started") {
       rafRef.current = requestAnimationFrame(draw);
     }
-  }, [setActiveNotes]);
+  }, [checkMisses, pushKeyState]);
 
-  const schedulePlayback = useCallback(() => {
-    clearScheduled();
-    Tone.getTransport().cancel(0);
-    Tone.getTransport().seconds = 0;
+  const handleKeyPress = useCallback(
+    async (noteName) => {
+      await Tone.start();
 
-    for (const note of notesRef.current) {
-      const id = Tone.getTransport().schedule((time) => {
-        samplerRef.current?.triggerAttackRelease(
-          note.name,
-          note.duration,
-          time,
-          note.velocity
-        );
-      }, note.time);
-      scheduledRef.current.push(id);
-    }
-  }, [clearScheduled]);
+      if (Tone.getTransport().state !== "started") return false;
+
+      const currentTime = Tone.getTransport().seconds;
+
+      const match = notesRef.current.find(
+        (n) =>
+          n.name === noteName &&
+          !hitIdsRef.current.has(n.id) &&
+          currentTime >= n.time - HIT_WINDOW_BEFORE &&
+          currentTime <= n.time + HIT_WINDOW_AFTER
+      );
+
+      if (!match) return false;
+
+      hitIdsRef.current.add(match.id);
+      return true;
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (onKeyPressRef) onKeyPressRef.current = handleKeyPress;
+  }, [handleKeyPress, onKeyPressRef]);
 
   const play = async () => {
-    await Tone.start();
     if (!ready) return;
 
-    if (Tone.getTransport().state === "paused") {
-      Tone.getTransport().start();
-    } else {
-      schedulePlayback();
-      Tone.getTransport().start();
-    }
+    setLoading(true);
+    try {
+      await ensurePiano();
 
-    setPlaying(true);
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(draw);
+      if (Tone.getTransport().state !== "started") {
+        if (Tone.getTransport().state !== "paused") {
+          await schedulePlayback();
+          Tone.getTransport().seconds = 0;
+          hitIdsRef.current = new Set();
+          activeNotesRef.current = new Set();
+          missedNotesRef.current = new Set();
+          for (const timer of missTimersRef.current.values()) clearTimeout(timer);
+          missTimersRef.current.clear();
+          pushKeyState();
+        }
+        Tone.getTransport().start();
+      }
+
+      setPlaying(true);
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(draw);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const pause = () => {
@@ -225,9 +271,15 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
   const stop = () => {
     Tone.getTransport().stop();
     Tone.getTransport().seconds = 0;
+    clearScheduled();
     setPlaying(false);
     setProgress(0);
-    setActiveNotes(new Set());
+    hitIdsRef.current = new Set();
+    activeNotesRef.current = new Set();
+    missedNotesRef.current = new Set();
+    for (const timer of missTimersRef.current.values()) clearTimeout(timer);
+    missTimersRef.current.clear();
+    pushKeyState();
     cancelAnimationFrame(rafRef.current);
     const canvas = canvasRef.current;
     if (canvas) {
@@ -248,6 +300,7 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
       clearScheduled();
+      for (const timer of missTimersRef.current.values()) clearTimeout(timer);
       Tone.getTransport().stop();
     };
   }, [draw, clearScheduled]);
@@ -261,11 +314,10 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
   return (
     <div className="midi-visualizer" ref={containerRef}>
       <canvas ref={canvasRef} className="midi-canvas" />
-
       <div className="midi-hit-line" />
 
       <div className="midi-controls">
-        <button type="button" onClick={play} disabled={!ready || playing}>
+        <button type="button" onClick={play} disabled={!ready || playing || loading}>
           ▶ Play
         </button>
         <button type="button" onClick={pause} disabled={!playing}>
@@ -278,6 +330,7 @@ export default function MidiVisualizer({ onActiveNotesChange }) {
           {formatTime(progress)} / {formatTime(duration)}
         </span>
         {!ready && <span className="midi-loading">Loading MIDI…</span>}
+        {loading && <span className="midi-loading">Loading samples…</span>}
       </div>
     </div>
   );
