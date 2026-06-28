@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 import { ensurePiano, playNote, scheduleNote } from "../../audio/pianoAudio";
@@ -364,27 +365,41 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       <div className="midi-hit-line" />
 
       <div className="midi-controls">
-        <button
-          type="button"
-          onClick={play}
-          disabled={!ready || playing || loading || waitingForMiss}
-        >
-          ▶ Play
-        </button>
-        <button type="button" onClick={pause} disabled={!playing || waitingForMiss}>
-          ⏸ Pause
-        </button>
-        <button type="button" onClick={stop} disabled={!ready}>
-          ⏹ Stop
-        </button>
-        <span className="midi-time">
-          {formatTime(progress)} / {formatTime(duration)}
-        </span>
-        {!ready && <span className="midi-loading">Loading MIDI…</span>}
-        {loading && <span className="midi-loading">Loading samples…</span>}
-        {waitingForMiss && (
-          <span className="midi-loading">Play the highlighted key to continue</span>
-        )}
+        <div className="midi-controls-row">
+          <button
+            type="button"
+            onClick={play}
+            disabled={!ready || playing || loading || waitingForMiss}
+          >
+            ▶ Play
+          </button>
+          <button type="button" onClick={pause} disabled={!playing || waitingForMiss}>
+            ⏸ Pause
+          </button>
+          <button type="button" onClick={stop} disabled={!ready}>
+            ⏹ Stop
+          </button>
+          <span className="midi-time">
+            {formatTime(progress)} / {formatTime(duration)}
+          </span>
+          {!ready && <span className="midi-loading">Loading MIDI…</span>}
+          {loading && <span className="midi-loading">Loading samples…</span>}
+        </div>
+
+        <AnimatePresence>
+          {waitingForMiss && (
+            <motion.p
+              key="miss-hint"
+              className="midi-miss-hint"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+              Play the highlighted key to continue
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

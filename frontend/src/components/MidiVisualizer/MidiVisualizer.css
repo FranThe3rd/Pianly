@@ -31,14 +31,21 @@
   left: 50%;
   transform: translateX(-50%);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 0;
   padding: 10px 18px;
   background: rgba(10, 12, 18, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   backdrop-filter: blur(8px);
   z-index: 10;
+}
+
+.midi-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .midi-controls button {
@@ -71,4 +78,13 @@
 .midi-loading {
   color: rgba(255, 255, 255, 0.5);
   font-size: 13px;
+}
+
+.midi-miss-hint {
+  margin: 8px 0 0;
+  padding: 0;
+  color: rgba(255, 180, 100, 0.95);
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
 }
