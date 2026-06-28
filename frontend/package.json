@@ -10,8 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tonejs/midi": "^2.0.28",
+    "@tonejs/piano": "^0.2.1",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.0",
+    "tone": "^14.9.17",
+    "webmidi": "^2.5.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
