@@ -3,13 +3,13 @@ import { playNote } from "../../audio/pianoAudio";
 import { noteToKeyPosition, buildPianoNotes } from "../../utils/pianoNotes";
 import "./Piano.css";
 
+const { white: WHITE_KEYS, black: BLACK_KEYS } = buildPianoNotes();
+
 export default function Piano({
   activeNotes = new Set(),
   missedNotes = new Set(),
   onKeyPress,
 }) {
-  const { white: whiteKeys, black: blackKeys } = buildPianoNotes();
-
   const handlePress = async (note) => {
     const scored = await onKeyPress?.(note);
 
@@ -18,48 +18,37 @@ export default function Piano({
     }
   };
 
+  const renderKey = (note, isBlack) => {
+    const pos = noteToKeyPosition(note, WHITE_KEYS);
+    if (!pos) return null;
+
+    return (
+      <button
+        key={note}
+        type="button"
+        className={[
+          "piano-key",
+          isBlack ? "black-key" : "white-key",
+          activeNotes.has(note) && "active",
+          missedNotes.has(note) && "missed",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={{
+          left: `${pos.leftPercent}%`,
+          width: `${pos.widthPercent}%`,
+        }}
+        onMouseDown={() => handlePress(note)}
+      />
+    );
+  };
+
   return (
     <div className="piano-container">
       <div className="piano-frame">
         <div className="piano">
-          {whiteKeys.map((note) => (
-            <button
-              key={note}
-              type="button"
-              className={[
-                "white-key",
-                activeNotes.has(note) && "active",
-                missedNotes.has(note) && "missed",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onMouseDown={() => handlePress(note)}
-            />
-          ))}
-
-          {blackKeys.map((note) => {
-            const pos = noteToKeyPosition(note, whiteKeys);
-            if (!pos) return null;
-
-            return (
-              <button
-                key={note}
-                type="button"
-                className={[
-                  "black-key",
-                  activeNotes.has(note) && "active",
-                  missedNotes.has(note) && "missed",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                style={{
-                  left: `${pos.leftPercent}%`,
-                  width: `${pos.widthPercent}%`,
-                }}
-                onMouseDown={() => handlePress(note)}
-              />
-            );
-          })}
+          {WHITE_KEYS.map((note) => renderKey(note, false))}
+          {BLACK_KEYS.map((note) => renderKey(note, true))}
         </div>
       </div>
     </div>

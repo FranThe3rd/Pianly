@@ -10,7 +10,6 @@
   border-top: 3px solid #1a120e;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
 }
-
 .piano-frame {
   position: relative;
   width: 100%;
@@ -19,60 +18,51 @@
   background: #0e0e0e;
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
 }
-
 .piano {
   position: relative;
   width: 100%;
   height: 100%;
-  display: flex;
 }
-
-.white-key {
-  flex: 1;
-  height: 100%;
-  background: linear-gradient(180deg, #fffff8 0%, #f2efe8 75%, #ddd8cf 100%);
-  border: none;
-  border-right: 1px solid #c4bfb6;
-  border-bottom: 4px solid #b8b0a4;
-  cursor: pointer;
-  padding: 0;
-  border-radius: 0 0 4px 4px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.white-key:first-child {
-  border-left: 1px solid #c4bfb6;
-}
-
-.white-key.active {
-  background: linear-gradient(180deg, #c8e4ff 0%, #9ecbf0 75%, #7eb0dc 100%);
-  border-bottom-color: #6a9cc4;
-}
-
-.white-key.missed {
-  background: linear-gradient(180deg, #ffc8c8 0%, #f09090 75%, #dc7070 100%);
-  border-bottom-color: #c46060;
-}
-
-.black-key {
+.piano-key {
   position: absolute;
-  height: 62%;
   top: 0;
-  cursor: pointer;
-  z-index: 10;
-  border: none;
+  margin: 0;
   padding: 0;
+  box-sizing: border-box;
+  appearance: none;
+  font: inherit;
+  border: none;
+  cursor: pointer;
+}
+.white-key {
+  height: 100%;
+  background: #f2efe8;
+  border-bottom: 4px solid #b8b0a4;
   border-radius: 0 0 4px 4px;
-  background: linear-gradient(180deg, #4a4a4a 0%, #222 55%, #111 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 4px 6px rgba(0, 0, 0, 0.55);
+  outline: 1px solid #c4bfb6;
+  outline-offset: -1px;
+  box-shadow: none;
 }
-
+.white-key.active {
+  background: #9ecbf0;
+  border-bottom-color: #6a9cc4;
+  outline-color: #6a9cc4;
+}
+.white-key.missed {
+  background: #f09090;
+  border-bottom-color: #c46060;
+  outline-color: #c46060;
+}
+.black-key {
+  height: 62%;
+  z-index: 10;
+  border-radius: 0 0 4px 4px;
+  background: #222;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.55);
+}
 .black-key.active {
-  background: linear-gradient(180deg, #4a7098 0%, #2a5080 55%, #1a3860 100%);
+  background: #2a5080;
 }
-
 .black-key.missed {
-  background: linear-gradient(180deg, #984a4a 0%, #802a2a 55%, #601a1a 100%);
+  background: #802a2a;
 }
