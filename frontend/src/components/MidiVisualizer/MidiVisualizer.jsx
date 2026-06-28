@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
-import { ensurePiano, scheduleNote } from "../../audio/pianoAudio";
+import { ensurePiano, playNote, scheduleNote } from "../../audio/pianoAudio";
 import { buildPianoNotes, getKeyRect } from "../../utils/pianoNotes";
 import "./MidiVisualizer.css";
 
@@ -10,7 +10,6 @@ import midiFile from "../../assets/Songs/Naruto Shippūden OST - Byakuya.mid?url
 const LOOK_AHEAD = 4;
 const HIT_WINDOW_BEFORE = 0.2;
 const HIT_WINDOW_AFTER = 0.25;
-const MISS_FLASH_MS = 500;
 
 const { white: whiteKeys } = buildPianoNotes();
 
@@ -38,13 +37,15 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
   const rafRef = useRef(null);
   const scheduledRef = useRef([]);
   const hitIdsRef = useRef(new Set());
-  const missTimersRef = useRef(new Map());
+  const pendingMissIdsRef = useRef(new Set());
+  const awaitingMissRef = useRef(false);
   const activeNotesRef = useRef(new Set());
   const missedNotesRef = useRef(new Set());
 
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [waitingForMiss, setWaitingForMiss] = useState(false);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
 
@@ -55,26 +56,29 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
     });
   }, [onKeyStateChange]);
 
-  const flashMiss = useCallback(
-    (noteName) => {
-      missedNotesRef.current.add(noteName);
-      pushKeyState();
+  const pauseForMiss = useCallback(
+    (missedNotes) => {
+      Tone.getTransport().pause();
+      awaitingMissRef.current = true;
+      setWaitingForMiss(true);
+      setPlaying(false);
 
-      if (missTimersRef.current.has(noteName)) {
-        clearTimeout(missTimersRef.current.get(noteName));
+      for (const note of missedNotes) {
+        pendingMissIdsRef.current.add(note.id);
+        missedNotesRef.current.add(note.name);
       }
 
-      missTimersRef.current.set(
-        noteName,
-        setTimeout(() => {
-          missedNotesRef.current.delete(noteName);
-          missTimersRef.current.delete(noteName);
-          pushKeyState();
-        }, MISS_FLASH_MS)
-      );
+      pushKeyState();
     },
     [pushKeyState]
   );
+
+  const resumeAfterMiss = useCallback(() => {
+    awaitingMissRef.current = false;
+    setWaitingForMiss(false);
+    Tone.getTransport().start();
+    setPlaying(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,15 +117,22 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
 
   const checkMisses = useCallback(
     (currentTime) => {
+      if (awaitingMissRef.current) return;
+
+      const newlyMissed = [];
+
       for (const note of notesRef.current) {
         if (hitIdsRef.current.has(note.id)) continue;
+        if (pendingMissIdsRef.current.has(note.id)) continue;
         if (currentTime <= note.time + HIT_WINDOW_AFTER) continue;
+        newlyMissed.push(note);
+      }
 
-        hitIdsRef.current.add(note.id);
-        flashMiss(note.name);
+      if (newlyMissed.length > 0) {
+        pauseForMiss(newlyMissed);
       }
     },
-    [flashMiss]
+    [pauseForMiss]
   );
 
   const draw = useCallback(() => {
@@ -165,7 +176,9 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       const noteHeight = Math.max(8, (note.duration / LOOK_AHEAD) * hitLine * 0.4);
 
       const hit = hitIdsRef.current.has(note.id);
-      const missed = !hit && currentTime > note.time + HIT_WINDOW_AFTER;
+      const missed =
+        pendingMissIdsRef.current.has(note.id) ||
+        (!hit && currentTime > note.time + HIT_WINDOW_AFTER);
 
       if (currentTime >= note.time && currentTime <= noteEnd && !missed) {
         active.add(note.name);
@@ -200,7 +213,7 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
 
     setProgress(currentTime);
 
-    if (Tone.getTransport().state === "started") {
+    if (Tone.getTransport().state === "started" || awaitingMissRef.current) {
       rafRef.current = requestAnimationFrame(draw);
     }
   }, [checkMisses, pushKeyState]);
@@ -208,6 +221,34 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
   const handleKeyPress = useCallback(
     async (noteName) => {
       await Tone.start();
+
+      if (awaitingMissRef.current) {
+        const match = notesRef.current.find(
+          (n) => n.name === noteName && pendingMissIdsRef.current.has(n.id)
+        );
+        if (!match) return false;
+
+        hitIdsRef.current.add(match.id);
+        pendingMissIdsRef.current.delete(match.id);
+
+        const stillPending = notesRef.current.some(
+          (n) => n.name === noteName && pendingMissIdsRef.current.has(n.id)
+        );
+        if (!stillPending) {
+          missedNotesRef.current.delete(noteName);
+        }
+
+        await playNote(noteName);
+        pushKeyState();
+
+        if (pendingMissIdsRef.current.size === 0) {
+          resumeAfterMiss();
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = requestAnimationFrame(draw);
+        }
+
+        return true;
+      }
 
       if (Tone.getTransport().state !== "started") return false;
 
@@ -226,7 +267,7 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       hitIdsRef.current.add(match.id);
       return true;
     },
-    []
+    [draw, pushKeyState, resumeAfterMiss]
   );
 
   useEffect(() => {
@@ -245,10 +286,11 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
           await schedulePlayback();
           Tone.getTransport().seconds = 0;
           hitIdsRef.current = new Set();
+          pendingMissIdsRef.current = new Set();
+          awaitingMissRef.current = false;
+          setWaitingForMiss(false);
           activeNotesRef.current = new Set();
           missedNotesRef.current = new Set();
-          for (const timer of missTimersRef.current.values()) clearTimeout(timer);
-          missTimersRef.current.clear();
           pushKeyState();
         }
         Tone.getTransport().start();
@@ -275,10 +317,11 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
     setPlaying(false);
     setProgress(0);
     hitIdsRef.current = new Set();
+    pendingMissIdsRef.current = new Set();
+    awaitingMissRef.current = false;
+    setWaitingForMiss(false);
     activeNotesRef.current = new Set();
     missedNotesRef.current = new Set();
-    for (const timer of missTimersRef.current.values()) clearTimeout(timer);
-    missTimersRef.current.clear();
     pushKeyState();
     cancelAnimationFrame(rafRef.current);
     const canvas = canvasRef.current;
@@ -290,7 +333,7 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
 
   useEffect(() => {
     const onResize = () => {
-      if (Tone.getTransport().state === "started") {
+      if (Tone.getTransport().state === "started" || awaitingMissRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = requestAnimationFrame(draw);
       }
@@ -300,7 +343,6 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       window.removeEventListener("resize", onResize);
       cancelAnimationFrame(rafRef.current);
       clearScheduled();
-      for (const timer of missTimersRef.current.values()) clearTimeout(timer);
       Tone.getTransport().stop();
     };
   }, [draw, clearScheduled]);
@@ -317,10 +359,14 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
       <div className="midi-hit-line" />
 
       <div className="midi-controls">
-        <button type="button" onClick={play} disabled={!ready || playing || loading}>
+        <button
+          type="button"
+          onClick={play}
+          disabled={!ready || playing || loading || waitingForMiss}
+        >
           ▶ Play
         </button>
-        <button type="button" onClick={pause} disabled={!playing}>
+        <button type="button" onClick={pause} disabled={!playing || waitingForMiss}>
           ⏸ Pause
         </button>
         <button type="button" onClick={stop} disabled={!ready}>
@@ -331,6 +377,9 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
         </span>
         {!ready && <span className="midi-loading">Loading MIDI…</span>}
         {loading && <span className="midi-loading">Loading samples…</span>}
+        {waitingForMiss && (
+          <span className="midi-loading">Play the highlighted key to continue</span>
+        )}
       </div>
     </div>
   );
