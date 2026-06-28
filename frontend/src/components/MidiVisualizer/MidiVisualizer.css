@@ -1,6 +1,6 @@
 .midi-visualizer {
   position: fixed;
-  top: 0;
+  top: var(--navbar-height);
   left: 0;
   right: 0;
   bottom: 200px;

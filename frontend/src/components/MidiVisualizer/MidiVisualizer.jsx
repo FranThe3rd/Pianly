@@ -11,6 +11,14 @@ const LOOK_AHEAD = 4;
 const HIT_WINDOW_BEFORE = 0.2;
 const HIT_WINDOW_AFTER = 0.25;
 
+const NOTE_COLOR = {
+  white: "hsla(205, 75%, 68%, 0.88)",
+  black: "hsla(205, 70%, 42%, 0.92)",
+  whiteHit: "hsla(205, 55%, 58%, 0.4)",
+  blackHit: "hsla(205, 50%, 38%, 0.45)",
+  missed: "rgba(220, 70, 70, 0.85)",
+};
+
 const { white: whiteKeys } = buildPianoNotes();
 
 function collectNotes(midi) {
@@ -184,15 +192,12 @@ export default function MidiVisualizer({ onKeyStateChange, onKeyPressRef }) {
         active.add(note.name);
       }
 
-      const hue = 200 + (note.midi % 12) * 12;
       if (missed) {
-        ctx.fillStyle = "rgba(220, 70, 70, 0.85)";
+        ctx.fillStyle = NOTE_COLOR.missed;
       } else if (hit) {
-        ctx.fillStyle = `hsla(${hue}, 60%, 55%, 0.45)`;
+        ctx.fillStyle = keyRect.isBlack ? NOTE_COLOR.blackHit : NOTE_COLOR.whiteHit;
       } else {
-        ctx.fillStyle = keyRect.isBlack
-          ? `hsla(${hue}, 75%, 55%, 0.9)`
-          : `hsla(${hue}, 70%, 65%, 0.85)`;
+        ctx.fillStyle = keyRect.isBlack ? NOTE_COLOR.black : NOTE_COLOR.white;
       }
 
       ctx.beginPath();
