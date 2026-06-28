@@ -30,11 +30,19 @@
   pointer-events: none;
 }
 
-.midi-controls {
+.midi-controls-anchor {
   position: absolute;
   top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.midi-controls {
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -44,13 +52,13 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   backdrop-filter: blur(8px);
-  z-index: 10;
 }
 
 .midi-controls-row {
   display: flex;
   align-items: center;
   gap: 10px;
+  white-space: nowrap;
 }
 
 .midi-controls button {
@@ -108,9 +116,62 @@
   box-shadow: 0 0 10px rgba(80, 200, 120, 0.35);
 }
 
+.midi-keyboard-btn {
+  background: linear-gradient(180deg, #444, #2a2a2a) !important;
+}
+
+.midi-keyboard-btn.active {
+  background: linear-gradient(180deg, #3a7bd5, #2a5a9e) !important;
+  box-shadow: 0 0 10px rgba(100, 160, 255, 0.35);
+}
+
+.midi-mic-status-wrap {
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
 .midi-mic-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: rgba(120, 220, 150, 0.9);
   font-size: 12px;
+  padding: 2px 0;
+  white-space: nowrap;
+}
+
+.midi-mic-status-label {
+  flex-shrink: 0;
+}
+
+.midi-mic-status-note {
+  display: inline-block;
+  min-width: 3.5ch;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.midi-keyboard-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(140, 190, 255, 0.95);
+  font-size: 12px;
+  max-width: 220px;
+  padding: 2px 0;
+}
+
+.midi-keyboard-status-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.midi-keyboard-status-note {
+  flex-shrink: 0;
+  min-width: 3.5ch;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .midi-mic-error {
@@ -122,7 +183,16 @@
 .midi-miss-hint {
   margin: 8px 0 0;
   padding: 0;
-  color: rgba(255, 180, 100, 0.95);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.midi-device-error {
+  margin: 8px 0 0;
+  padding: 0;
+  color: rgba(240, 120, 120, 0.95);
   font-size: 13px;
   text-align: center;
   white-space: nowrap;

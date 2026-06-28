@@ -8,8 +8,12 @@ const BLACK_ANCHOR = {
   "A#": "A",
 };
 const BLACK_KEY_OFFSET = 0.68;
-const PIANO_START_MIDI = 21; // A0
-const PIANO_END_MIDI = 108; // C8
+export const PIANO_START_MIDI = 21; // A0
+export const PIANO_END_MIDI = 108; // C8
+
+export function isPianoMidi(midi) {
+  return midi >= PIANO_START_MIDI && midi <= PIANO_END_MIDI;
+}
 
 export function buildPianoNotes(
   startMidi = PIANO_START_MIDI,

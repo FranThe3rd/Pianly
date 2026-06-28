@@ -122,6 +122,12 @@ export default function MidiVisualizer({
   micListening = false,
   micError = null,
   micDetectedNote = null,
+  midiEnabled = false,
+  onMidiToggle,
+  midiConnected = false,
+  midiError = null,
+  midiActiveNote = null,
+  midiDeviceName = null,
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -479,8 +485,9 @@ export default function MidiVisualizer({
         <div className="midi-hit-line" />
       </motion.div>
 
-      <div className="midi-controls">
-        <div className="midi-controls-row">
+      <div className="midi-controls-anchor">
+        <div className="midi-controls">
+          <div className="midi-controls-row">
           <button
             type="button"
             className={freePlay ? "midi-mode-btn active" : "midi-mode-btn"}
@@ -513,14 +520,44 @@ export default function MidiVisualizer({
           >
             🎤 Mic
           </button>
+          <button
+            type="button"
+            className={midiEnabled ? "midi-keyboard-btn active" : "midi-keyboard-btn"}
+            onClick={onMidiToggle}
+            title="Use a MIDI keyboard as input"
+          >
+            🎹 MIDI
+          </button>
           <span className="midi-time">
             {formatTime(progress)} / {formatTime(duration)}
           </span>
           {!ready && <span className="midi-loading">Loading MIDI…</span>}
           {loading && <span className="midi-loading">Loading samples…</span>}
-          {micEnabled && micListening && (
-            <span className="midi-mic-status">
-              Listening{micDetectedNote ? `: ${micDetectedNote}` : "…"}
+          <AnimatePresence>
+            {micEnabled && (
+              <motion.div
+                key="mic-status"
+                className="midi-mic-status-wrap"
+                initial={{ opacity: 0, maxWidth: 0 }}
+                animate={{ opacity: 1, maxWidth: 110 }}
+                exit={{ opacity: 0, maxWidth: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                <span className="midi-mic-status">
+                  <span className="midi-mic-status-label">Listening</span>
+                  <span className="midi-mic-status-note">
+                    {micListening ? (micDetectedNote ?? "…") : "…"}
+                  </span>
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {midiEnabled && midiConnected && (
+            <span className="midi-keyboard-status">
+              <span className="midi-keyboard-status-label">{midiDeviceName}</span>
+              {midiActiveNote && (
+                <span className="midi-keyboard-status-note">{midiActiveNote}</span>
+              )}
             </span>
           )}
           {micError && <span className="midi-mic-error">{micError}</span>}
@@ -542,7 +579,20 @@ export default function MidiVisualizer({
               Play the highlighted key to continue
             </motion.p>
           )}
+          {midiEnabled && midiError && (
+            <motion.p
+              key="midi-error"
+              className="midi-device-error"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+            >
+              {midiError}
+            </motion.p>
+          )}
         </AnimatePresence>
+        </div>
       </div>
     </div>
   );

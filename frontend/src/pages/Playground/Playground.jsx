@@ -3,6 +3,7 @@ import * as Tone from "tone";
 import Piano from "../../components/Piano/Piano.jsx";
 import MidiVisualizer from "../../components/MidiVisualizer/MidiVisualizer.jsx";
 import { useMicPitch } from "../../hooks/useMicPitch";
+import { useMidiKeyboard } from "../../hooks/useMidiKeyboard";
 import { playNote } from "../../audio/pianoAudio";
 
 const ECHO_SUPPRESS_MS = 1100;
@@ -14,6 +15,7 @@ export const Playground = () => {
     missed: new Set(),
   });
   const [micEnabled, setMicEnabled] = useState(false);
+  const [midiEnabled, setMidiEnabled] = useState(false);
   const [freePlay, setFreePlay] = useState(false);
   const keyPressRef = useRef(null);
   const flashTimerRef = useRef(null);
@@ -68,6 +70,17 @@ export const Playground = () => {
     [isMicSuppressed, playFreeNote]
   );
 
+  const handleMidiNote = useCallback(
+    (note) => {
+      if (freePlay) {
+        playFreeNote(note);
+        return;
+      }
+      keyPressRef.current?.(note);
+    },
+    [freePlay, playFreeNote]
+  );
+
   const handlePianoNote = useCallback(
     async (note) => {
       if (freePlay) {
@@ -89,6 +102,15 @@ export const Playground = () => {
     }
   );
 
+  const {
+    connected: midiConnected,
+    error: midiError,
+    activeNote: midiActiveNote,
+    deviceName: midiDeviceName,
+  } = useMidiKeyboard(handleMidiNote, midiEnabled, {
+    acceptNoteRef: acceptMicNoteRef,
+  });
+
   const handleKeyStateChange = useCallback(
     (state) => {
       if (!freePlay) setKeyState(state);
@@ -108,13 +130,25 @@ export const Playground = () => {
         micListening={listening}
         micError={micError}
         micDetectedNote={detectedNote}
+        midiEnabled={midiEnabled}
+        onMidiToggle={() => setMidiEnabled((enabled) => !enabled)}
+        midiConnected={midiConnected}
+        midiError={midiError}
+        midiActiveNote={midiActiveNote}
+        midiDeviceName={midiDeviceName}
       />
       <Piano
         activeNotes={keyState.active}
         missedNotes={keyState.missed}
         freePlay={freePlay}
         onKeyPress={handlePianoNote}
-        micDetectedNote={micEnabled ? detectedNote : null}
+        micDetectedNote={
+          midiEnabled && midiActiveNote
+            ? midiActiveNote
+            : micEnabled
+              ? detectedNote
+              : null
+        }
       />
     </div>
   );
