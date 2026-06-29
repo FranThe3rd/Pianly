@@ -1,6 +1,7 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { SubscriptionProvider } from "./context/SubscriptionContext";
 import { LenisProvider } from "./context/LenisContext";
 import LandingNav from "./components/LandingNav/LandingNav";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -9,6 +10,8 @@ import Login from "./pages/Login/Login.jsx";
 import Register from "./pages/Register/Register.jsx";
 import Songs from "./pages/Songs/Songs.jsx";
 import Playground from "./pages/Playground/Playground.jsx";
+import Pricing from "./pages/Pricing/Pricing.jsx";
+import PricingReturn from "./pages/Pricing/PricingReturn.jsx";
 
 function AppRoutes() {
   return (
@@ -19,6 +22,8 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/songs" element={<Songs />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/pricing/return" element={<PricingReturn />} />
         <Route
           path="/playground"
           element={
@@ -35,11 +40,13 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <LenisProvider>
-          <AppRoutes />
-        </LenisProvider>
-      </BrowserRouter>
+      <SubscriptionProvider>
+        <BrowserRouter>
+          <LenisProvider>
+            <AppRoutes />
+          </LenisProvider>
+        </BrowserRouter>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

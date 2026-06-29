@@ -82,3 +82,21 @@ export const authApi = {
     return api("/api/v1/demo-controller").then((response) => response.ok);
   },
 };
+
+export const subscriptionApi = {
+  getStatus() {
+    return api("/api/v1/payments/status").then(parseJson);
+  },
+
+  createCheckoutSession() {
+    return api("/api/v1/payments/create-checkout-session", {
+      method: "POST",
+    }).then(parseJson);
+  },
+
+  getSessionStatus(sessionId) {
+    return api(
+      `/api/v1/payments/session-status?session_id=${encodeURIComponent(sessionId)}`
+    ).then(parseJson);
+  },
+};

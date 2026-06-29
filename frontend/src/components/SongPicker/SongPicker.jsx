@@ -1,13 +1,18 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DIFFICULTIES,
   SONG_CATALOG,
   getSavedSelection,
   getSongCoverUrl,
+  isSongUnlocked,
 } from "../../data/songCatalog";
+import { useSubscription } from "../../context/SubscriptionContext";
 import "./SongPicker.css";
 
 export default function SongPicker({ onConfirm, showHeader = true }) {
+  const navigate = useNavigate();
+  const { pro } = useSubscription();
   const saved = getSavedSelection();
   const [difficulty, setDifficulty] = useState(saved?.difficulty ?? "easy");
   const [songId, setSongId] = useState(
@@ -26,6 +31,9 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
 
   const selectedSong =
     filteredSongs.find((s) => s.id === songId) ?? filteredSongs[0] ?? null;
+  const selectedLocked = selectedSong
+    ? !isSongUnlocked(selectedSong, pro)
+    : false;
 
   const handleDifficultyChange = (id) => {
     setDifficulty(id);
@@ -36,6 +44,10 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
 
   const handleConfirm = () => {
     if (!selectedSong) return;
+    if (selectedLocked) {
+      navigate("/pricing");
+      return;
+    }
     onConfirm(difficulty, selectedSong);
   };
 
@@ -103,17 +115,23 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
             <div className="song-grid">
               {filteredSongs.map((song, index) => {
                 const isActive = selectedSong?.id === song.id;
+                const locked = !isSongUnlocked(song, pro);
 
                 return (
                   <button
                     key={song.id}
                     type="button"
-                    className={isActive ? "song-tile active" : "song-tile"}
+                    className={
+                      (isActive ? "song-tile active" : "song-tile") +
+                      (locked ? " locked" : "")
+                    }
                     style={{ animationDelay: `${index * 45}ms` }}
                     onClick={() => setSongId(song.id)}
                     aria-pressed={isActive}
                   >
-                    <span className="song-tile-index">{index + 1}</span>
+                    <span className="song-tile-index">
+                      {locked ? "🔒" : index + 1}
+                    </span>
                     <span className="song-tile-art">
                       <img src={getSongCoverUrl(song.id)} alt="" loading="lazy" />
                       <span className="song-disc" aria-hidden="true">
@@ -122,6 +140,7 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
                       </span>
                     </span>
                     <span className="song-tile-title">{song.name}</span>
+                    {locked && <span className="song-tile-badge">PRO</span>}
                   </button>
                 );
               })}
@@ -135,7 +154,7 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
           onClick={handleConfirm}
           disabled={!selectedSong}
         >
-          Start playing
+          {selectedLocked ? "Unlock with Pro — $8/month" : "Start playing"}
         </button>
       </div>
     </div>

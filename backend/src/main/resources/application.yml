@@ -14,3 +14,13 @@ spring:
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_your_secret_key_here}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  price-amount: 800
+  currency: usd
+  product-name: "Pianly Pro"
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+

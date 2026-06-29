@@ -16,6 +16,17 @@ const SONG_DISPLAY_NAMES = {
   "Mary Had A Little Lamb [SUPER EASY] + Midi Download": "Mary Had A Little Lamb",
 };
 
+// Songs available on the free plan. Everything else requires Pianly Pro.
+const FREE_SONG_NAMES = new Set(["Mary Had A Little Lamb"]);
+
+export function isSongFree(song) {
+  return Boolean(song?.free);
+}
+
+export function isSongUnlocked(song, isPro) {
+  return Boolean(isPro) || isSongFree(song);
+}
+
 function slugify(filename) {
   return filename
     .toLowerCase()
@@ -35,11 +46,13 @@ function buildCatalog() {
     const [, difficulty, filename] = match;
     if (seenUrls.has(url)) continue;
 
+    const name = SONG_DISPLAY_NAMES[filename] ?? filename;
     seenUrls.add(url);
     catalog[difficulty].push({
       id: `${difficulty}-${slugify(filename)}`,
-      name: SONG_DISPLAY_NAMES[filename] ?? filename,
+      name,
       url,
+      free: FREE_SONG_NAMES.has(name),
     });
   }
 

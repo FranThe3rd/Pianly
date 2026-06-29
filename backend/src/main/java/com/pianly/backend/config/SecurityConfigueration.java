@@ -28,7 +28,7 @@ public class SecurityConfigueration {
                 .disable()
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests()
-                .requestMatchers("/api/v1/auth/**")
+                .requestMatchers("/api/v1/auth/**", "/api/v1/payments/webhook")
                 .permitAll()
                 .anyRequest()
                 .authenticated()

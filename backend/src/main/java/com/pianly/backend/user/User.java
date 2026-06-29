@@ -35,6 +35,13 @@ public class User implements UserDetails {
     @Enumerated(EnumType.ORDINAL)
     private Role role;
 
+    @Builder.Default
+    private boolean pro = false;
+
+    private String stripeCustomerId;
+
+    private String stripeSubscriptionId;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
