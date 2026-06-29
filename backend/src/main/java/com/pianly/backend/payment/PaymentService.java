@@ -74,6 +74,18 @@ public class PaymentService {
     public boolean syncSessionStatus(User user, String sessionId) throws StripeException {
         Session session = Session.retrieve(sessionId);
 
+        // Ensure this Checkout Session actually belongs to the authenticated user
+        // before granting Pro, so a user can't replay someone else's session id.
+        String sessionEmail = session.getMetadata() != null
+                ? session.getMetadata().get("user_email")
+                : null;
+        if (sessionEmail == null) {
+            sessionEmail = session.getCustomerEmail();
+        }
+        if (sessionEmail == null || !sessionEmail.equalsIgnoreCase(user.getEmail())) {
+            return user.isPro();
+        }
+
         boolean completed = "complete".equals(session.getStatus());
         if (completed) {
             user.setPro(true);

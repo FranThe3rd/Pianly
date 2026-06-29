@@ -20,7 +20,8 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY= "REDACTED";
+    @org.springframework.beans.factory.annotation.Value("${jwt.secret-key}")
+    private String secretKey;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -43,7 +44,7 @@ public class JwtService {
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -71,7 +72,7 @@ public class JwtService {
     }
 
     private Key getSigningKey() {
-        byte[] keyBites = Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBites = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBites);
     }
 }
