@@ -8,7 +8,7 @@
   align-items: center;
   gap: 32px;
   padding: 0 clamp(20px, 4vw, 48px);
-  height: 64px;
+  height: var(--navbar-height);
   background: rgba(28, 10, 94, 0.92);
   backdrop-filter: blur(8px);
   font-family: "Montserrat", sans-serif;

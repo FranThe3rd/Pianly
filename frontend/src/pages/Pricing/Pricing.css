@@ -1,9 +1,9 @@
 .pricing-page {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  min-height: calc(100vh - var(--navbar-height));
-  padding: 48px clamp(16px, 4vw, 48px);
+  min-height: 100vh;
+  padding: calc(var(--navbar-height) + 48px) clamp(16px, 4vw, 48px) 48px;
   background: linear-gradient(
     180deg,
     var(--purple-dark) 0%,

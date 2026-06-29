@@ -38,7 +38,7 @@ function diatonicStep(noteName) {
 }
 
 function sheetMetrics(w, h) {
-  const lineGap = Math.min(16, Math.max(8, h / 26));
+  const lineGap = Math.min(22, Math.max(12, h / 22));
   const yMiddleC = h / 2;
   const playheadX = Math.max(96, w * 0.16);
   const pxPerSec = (w - playheadX) / LOOK_AHEAD;
@@ -67,14 +67,14 @@ function drawLedgerLines(ctx, x, stepFromC4, m) {
 }
 
 function drawSheetBackground(ctx, w, h, m) {
-  const paperTop = m.yMiddleC - 7.5 * m.lineGap;
-  const paperBottom = m.yMiddleC + 7.5 * m.lineGap;
+  const paperTop = 10;
+  const paperBottom = h - 10;
   const paperH = paperBottom - paperTop;
 
   ctx.save();
-  ctx.fillStyle = "rgba(248, 246, 255, 0.97)";
+  ctx.fillStyle = "rgba(248, 246, 255, 0.98)";
   ctx.beginPath();
-  ctx.roundRect(8, paperTop, w - 16, paperH, 10);
+  ctx.roundRect(10, paperTop, w - 20, paperH, 14);
   ctx.fill();
 
   ctx.strokeStyle = SHEET_LINE;
@@ -748,7 +748,7 @@ export default function MidiVisualizer({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="midi-controls">
+        <div className={playing || waitingForMiss ? "midi-controls dimmed" : "midi-controls"}>
           <div className="midi-controls-row">
           {songName && (
             <span className="midi-song-name" title={songName}>
