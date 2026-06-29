@@ -10,6 +10,13 @@ const LOOK_AHEAD = 4;
 const HIT_WINDOW_BEFORE = 0.2;
 const HIT_WINDOW_AFTER = 0.25;
 const MIN_FALL_TIME = 3;
+const MIN_PLAYBACK_SPEED = 0.25;
+const MAX_PLAYBACK_SPEED = 1;
+const DEFAULT_PLAYBACK_SPEED = 1;
+
+function getSongTime(transportSeconds, speed) {
+  return transportSeconds * speed;
+}
 
 const NOTE_COLOR = {
   white: "hsla(205, 75%, 68%, 0.88)",
@@ -291,6 +298,7 @@ export default function MidiVisualizer({
   const startOffsetRef = useRef(0);
   const countingInRef = useRef(false);
   const sheetModeRef = useRef(false);
+  const playbackSpeedRef = useRef(DEFAULT_PLAYBACK_SPEED);
 
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -301,6 +309,7 @@ export default function MidiVisualizer({
   const [progress, setProgress] = useState(0);
   const [countingIn, setCountingIn] = useState(false);
   const [sheetMode, setSheetMode] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(DEFAULT_PLAYBACK_SPEED);
 
   const toggleSheetMode = useCallback(() => {
     setSheetMode((on) => {
@@ -325,7 +334,10 @@ export default function MidiVisualizer({
     if (!container) return;
 
     const { width, height } = container.getBoundingClientRect();
-    const currentTime = Tone.getTransport().seconds;
+    const currentTime = getSongTime(
+      Tone.getTransport().seconds,
+      playbackSpeedRef.current
+    );
 
     if (sheetModeRef.current) {
       const m = sheetMetrics(width, height);
@@ -385,6 +397,8 @@ export default function MidiVisualizer({
     setCountingIn(false);
     countingInRef.current = false;
     startOffsetRef.current = 0;
+    playbackSpeedRef.current = DEFAULT_PLAYBACK_SPEED;
+    setPlaybackSpeed(DEFAULT_PLAYBACK_SPEED);
     setWaitingForMiss(false);
     hitIdsRef.current = new Set();
     pendingMissIdsRef.current = new Set();
@@ -423,18 +437,50 @@ export default function MidiVisualizer({
     scheduledRef.current = [];
   }, []);
 
-  const schedulePlayback = useCallback(async () => {
+  const schedulePlayback = useCallback(async (fromSongTime = 0) => {
     clearScheduled();
     Tone.getTransport().cancel(0);
     await ensurePiano();
 
+    const speed = playbackSpeedRef.current;
+
     for (const note of notesRef.current) {
+      if (note.time < fromSongTime - 0.001) continue;
+
+      const transportTime = note.time / speed;
       const id = Tone.getTransport().schedule((time) => {
-        scheduleNote(note.name, time, note.duration, note.velocity);
-      }, note.time);
+        scheduleNote(note.name, time, note.duration / speed, note.velocity);
+      }, transportTime);
       scheduledRef.current.push(id);
     }
   }, [clearScheduled]);
+
+  const applyPlaybackSpeed = useCallback(
+    async (newSpeed) => {
+      if (freePlay) return;
+
+      const clamped = Math.min(
+        MAX_PLAYBACK_SPEED,
+        Math.max(MIN_PLAYBACK_SPEED, newSpeed)
+      );
+      const oldSpeed = playbackSpeedRef.current;
+      if (clamped === oldSpeed) return;
+
+      const transport = Tone.getTransport();
+      const songTime = getSongTime(transport.seconds, oldSpeed);
+
+      playbackSpeedRef.current = clamped;
+      setPlaybackSpeed(clamped);
+      transport.seconds = songTime / clamped;
+
+      if (transport.state !== "stopped") {
+        await schedulePlayback(songTime);
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(drawRef.current);
+      }
+    },
+    [freePlay, schedulePlayback]
+  );
 
   const checkMisses = useCallback(
     (currentTime) => {
@@ -477,7 +523,10 @@ export default function MidiVisualizer({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    const currentTime = Tone.getTransport().seconds;
+    const currentTime = getSongTime(
+      Tone.getTransport().seconds,
+      playbackSpeedRef.current
+    );
     checkMisses(currentTime);
 
     const active = new Set();
@@ -612,7 +661,10 @@ export default function MidiVisualizer({
 
       if (Tone.getTransport().state !== "started") return false;
 
-      const currentTime = Tone.getTransport().seconds;
+      const currentTime = getSongTime(
+        Tone.getTransport().seconds,
+        playbackSpeedRef.current
+      );
 
       const match = notesRef.current.find(
         (n) =>
@@ -792,6 +844,24 @@ export default function MidiVisualizer({
           <button type="button" onClick={stop} disabled={freePlay || !ready}>
             ⏹ Stop
           </button>
+          {!freePlay && (
+            <label className="midi-speed" title="Playback speed">
+              <span className="midi-speed-label">Speed</span>
+              <input
+                type="range"
+                className="midi-speed-slider"
+                min={MIN_PLAYBACK_SPEED}
+                max={MAX_PLAYBACK_SPEED}
+                step={0.05}
+                value={playbackSpeed}
+                disabled={!ready}
+                onChange={(e) => applyPlaybackSpeed(Number(e.target.value))}
+              />
+              <span className="midi-speed-value">
+                {Math.round(playbackSpeed * 100)}%
+              </span>
+            </label>
+          )}
           <button
             type="button"
             className={micEnabled ? "midi-mic-btn active" : "midi-mic-btn"}

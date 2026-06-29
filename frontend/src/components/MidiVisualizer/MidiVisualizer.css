@@ -108,6 +108,41 @@
   margin-left: 8px;
 }
 
+.midi-speed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.midi-speed-label {
+  flex-shrink: 0;
+}
+
+.midi-speed-value {
+  min-width: 3.2ch;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.midi-speed-slider {
+  width: 88px;
+  height: 4px;
+  margin: 0;
+  accent-color: var(--purple-bright);
+  cursor: pointer;
+}
+
+.midi-speed-slider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .midi-loading {
   color: rgba(255, 255, 255, 0.5);
   font-size: 13px;
