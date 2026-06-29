@@ -9,6 +9,7 @@ import "./MidiVisualizer.css";
 const LOOK_AHEAD = 4;
 const HIT_WINDOW_BEFORE = 0.2;
 const HIT_WINDOW_AFTER = 0.25;
+const MIN_FALL_TIME = 3;
 
 const NOTE_COLOR = {
   white: "hsla(205, 75%, 68%, 0.88)",
@@ -110,6 +111,20 @@ function collectNotes(midi) {
   return notes.sort((a, b) => a.time - b.time);
 }
 
+function applyStartOffset(notes) {
+  if (notes.length === 0) return 0;
+
+  const firstNoteTime = notes[0].time;
+  const desiredLeadIn = Math.max(LOOK_AHEAD, MIN_FALL_TIME);
+  if (firstNoteTime >= desiredLeadIn) return 0;
+
+  const offset = desiredLeadIn - firstNoteTime;
+  for (const note of notes) {
+    note.time += offset;
+  }
+  return offset;
+}
+
 export default function MidiVisualizer({
   midiUrl,
   songName,
@@ -141,6 +156,8 @@ export default function MidiVisualizer({
   const activeNotesRef = useRef(new Set());
   const missedNotesRef = useRef(new Set());
   const sparklesRef = useRef([]);
+  const startOffsetRef = useRef(0);
+  const countingInRef = useRef(false);
 
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -149,6 +166,7 @@ export default function MidiVisualizer({
   const [notesVisible, setNotesVisible] = useState(false);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [countingIn, setCountingIn] = useState(false);
 
   const pushKeyState = useCallback(() => {
     onKeyStateChange?.({
@@ -202,6 +220,9 @@ export default function MidiVisualizer({
     setPlaying(false);
     setNotesVisible(false);
     setProgress(0);
+    setCountingIn(false);
+    countingInRef.current = false;
+    startOffsetRef.current = 0;
     setWaitingForMiss(false);
     hitIdsRef.current = new Set();
     pendingMissIdsRef.current = new Set();
@@ -220,7 +241,9 @@ export default function MidiVisualizer({
 
     Midi.fromUrl(midiUrl).then((midi) => {
       if (cancelled) return;
-      notesRef.current = collectNotes(midi);
+      const notes = collectNotes(midi);
+      startOffsetRef.current = applyStartOffset(notes);
+      notesRef.current = notes;
       setDuration(midi.duration);
       setReady(true);
       setLoading(false);
@@ -344,7 +367,17 @@ export default function MidiVisualizer({
       pushKeyState();
     }
 
-    setProgress(currentTime);
+    setProgress(Math.max(0, currentTime - startOffsetRef.current));
+
+    const nextCountingIn =
+      Tone.getTransport().state === "started" &&
+      startOffsetRef.current > 0 &&
+      currentTime < startOffsetRef.current;
+
+    if (nextCountingIn !== countingInRef.current) {
+      countingInRef.current = nextCountingIn;
+      setCountingIn(nextCountingIn);
+    }
 
     if (Tone.getTransport().state === "started" || awaitingMissRef.current || sparklesRef.current.length > 0) {
       rafRef.current = requestAnimationFrame(draw);
@@ -454,6 +487,8 @@ export default function MidiVisualizer({
     clearScheduled();
     setPlaying(false);
     setProgress(0);
+    setCountingIn(false);
+    countingInRef.current = false;
     setNotesVisible(false);
     hitIdsRef.current = new Set();
     pendingMissIdsRef.current = new Set();
@@ -601,6 +636,18 @@ export default function MidiVisualizer({
         </div>
 
         <AnimatePresence>
+          {countingIn && (
+            <motion.p
+              key="count-in"
+              className="midi-count-in-hint"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+              Get ready — watch the notes fall
+            </motion.p>
+          )}
           {waitingForMiss && (
             <motion.p
               key="miss-hint"

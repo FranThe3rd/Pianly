@@ -47,6 +47,17 @@
   opacity: 0.75;
 }
 
+.landing-nav-links a.active {
+  color: #fff;
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.landing-nav-links a.active:hover {
+  opacity: 1;
+}
+
 .landing-nav-actions {
   display: flex;
   align-items: center;

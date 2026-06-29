@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "./LandingNav.css";
 
@@ -16,7 +16,7 @@ export default function LandingNav() {
       <nav className="landing-nav-links">
         <a href="/#progress">Features</a>
         <a href="/#about">About</a>
-        <a href="/#songs">Songs</a>
+        <NavLink to="/songs">Songs</NavLink>
         <a href="/#start">Get started</a>
         {isAuthenticated && <Link to="/playground">Playground</Link>}
       </nav>

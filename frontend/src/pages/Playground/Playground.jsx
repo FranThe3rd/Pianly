@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import * as Tone from "tone";
 import Piano from "../../components/Piano/Piano.jsx";
 import MidiVisualizer from "../../components/MidiVisualizer/MidiVisualizer.jsx";
@@ -13,6 +14,7 @@ const ECHO_SUPPRESS_MS = 1100;
 const ECHO_GLOBAL_MS = 400;
 
 export const Playground = () => {
+  const navigate = useNavigate();
   const [selection, setSelection] = useState(() => getSavedSelection());
   const [showSetup, setShowSetup] = useState(() => !getSavedSelection());
   const [keyState, setKeyState] = useState({
@@ -138,7 +140,7 @@ export const Playground = () => {
       <MidiVisualizer
         midiUrl={selection?.song.url}
         songName={selection?.song.name}
-        onChangeSong={() => setShowSetup(true)}
+        onChangeSong={() => navigate("/songs")}
         onKeyStateChange={handleKeyStateChange}
         onKeyPressRef={keyPressRef}
         freePlay={freePlay}

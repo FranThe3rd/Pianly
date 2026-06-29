@@ -137,7 +137,7 @@ export default function Home() {
               Fur Elise to your favorite themes. Pick a song, follow the falling
               notes, and watch your accuracy score grow.
             </p>
-            <Link to={startLink} className="landing-btn landing-btn-outline">
+            <Link to="/songs" className="landing-btn landing-btn-outline">
               Browse songs
             </Link>
           </div>
