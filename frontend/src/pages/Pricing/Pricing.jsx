@@ -23,11 +23,25 @@ export default function Pricing() {
   const { pro, loading } = useSubscription();
   const location = useLocation();
   const [showCheckout, setShowCheckout] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState(null);
 
   const fetchClientSecret = useCallback(() => {
     return subscriptionApi
       .createCheckoutSession()
       .then((data) => data.clientSecret);
+  }, []);
+
+  const handleManageSubscription = useCallback(async () => {
+    setPortalLoading(true);
+    setPortalError(null);
+    try {
+      const { url } = await subscriptionApi.createPortalSession();
+      window.location.href = url;
+    } catch (err) {
+      setPortalError(err.message || "Could not open the billing portal.");
+      setPortalLoading(false);
+    }
   }, []);
 
   if (!isAuthenticated) {
@@ -84,6 +98,17 @@ export default function Pricing() {
                 <Link to="/songs" className="pricing-cta">
                   Browse all songs
                 </Link>
+                <button
+                  type="button"
+                  className="pricing-manage"
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                >
+                  {portalLoading ? "Opening…" : "Manage or cancel subscription"}
+                </button>
+                {portalError && (
+                  <p className="pricing-error">{portalError}</p>
+                )}
               </div>
             ) : !showCheckout ? (
               <button

@@ -67,6 +67,27 @@ public class PaymentService {
     }
 
     /**
+     * Creates a Stripe Billing (Customer) Portal session so the user can manage
+     * or cancel their subscription on Stripe-hosted pages. Returns the URL the
+     * frontend should redirect to.
+     */
+    public String createBillingPortalSession(User user) throws StripeException {
+        if (user.getStripeCustomerId() == null) {
+            throw new IllegalStateException("No active subscription to manage.");
+        }
+
+        com.stripe.param.billingportal.SessionCreateParams params =
+                com.stripe.param.billingportal.SessionCreateParams.builder()
+                        .setCustomer(user.getStripeCustomerId())
+                        .setReturnUrl(stripeConfig.getFrontendUrl() + "/pricing")
+                        .build();
+
+        com.stripe.model.billingportal.Session portalSession =
+                com.stripe.model.billingportal.Session.create(params);
+        return portalSession.getUrl();
+    }
+
+    /**
      * Retrieves a Checkout Session after the customer returns from Embedded Checkout.
      * If the session has completed, the user is upgraded to Pro. Returns the latest
      * pro status for the user.

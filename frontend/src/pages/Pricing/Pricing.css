@@ -192,6 +192,38 @@
   font-weight: 700;
 }
 
+.pricing-manage {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.pricing-manage:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pricing-manage:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pricing-error {
+  margin: 10px 0 0;
+  color: rgba(240, 120, 120, 0.95);
+  font-size: 13px;
+}
+
 .pricing-checkout {
   padding: 20px;
   background: #fff;

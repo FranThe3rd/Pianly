@@ -94,6 +94,12 @@ export const subscriptionApi = {
     }).then(parseJson);
   },
 
+  createPortalSession() {
+    return api("/api/v1/payments/create-portal-session", {
+      method: "POST",
+    }).then(parseJson);
+  },
+
   getSessionStatus(sessionId) {
     return api(
       `/api/v1/payments/session-status?session_id=${encodeURIComponent(sessionId)}`

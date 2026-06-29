@@ -29,6 +29,17 @@ public class PaymentController {
         }
     }
 
+    @PostMapping("/create-portal-session")
+    public ResponseEntity<?> createPortalSession(@AuthenticationPrincipal User principal) {
+        User user = userRepository.findByEmail(principal.getEmail()).orElseThrow();
+        try {
+            String url = paymentService.createBillingPortalSession(user);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (StripeException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/status")
     public ResponseEntity<Map<String, Boolean>> status(@AuthenticationPrincipal User principal) {
         User user = userRepository.findByEmail(principal.getEmail()).orElseThrow();
