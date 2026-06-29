@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+
 *,
 *::before,
 *::after {
@@ -6,11 +8,19 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: "Montserrat", sans-serif;
   background: #0d0f14;
   color: #fff;
 }
 
 :root {
   --navbar-height: 56px;
+  --purple-dark: #1c0a5e;
+  --purple-mid: #2d0070;
+  --purple-accent: #8a2be2;
+  --purple-bright: #7b2cff;
+  --cream: #f7f3e3;
+  --teal: #26c6b9;
+  --coral: #ff6b6b;
+  --navy: #1a1a2e;
 }

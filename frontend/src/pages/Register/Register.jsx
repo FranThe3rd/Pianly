@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import LandingNav from "../../components/LandingNav/LandingNav";
 import "../Login/Auth.css";
 
 export default function Register() {
@@ -41,6 +42,7 @@ export default function Register() {
 
   return (
     <div className="auth-page">
+      <LandingNav />
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>Register</h1>
 
@@ -92,7 +94,7 @@ export default function Register() {
           />
         </label>
 
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="auth-submit" disabled={submitting}>
           {submitting ? "Creating account…" : "Register"}
         </button>
 
