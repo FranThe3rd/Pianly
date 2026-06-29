@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import LandingNav from "../../components/LandingNav/LandingNav";
 import "./Auth.css";
 
 export default function Login() {
@@ -36,7 +35,6 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <LandingNav />
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>Login</h1>
 

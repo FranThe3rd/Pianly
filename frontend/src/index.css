@@ -9,12 +9,12 @@
 body {
   margin: 0;
   font-family: "Montserrat", sans-serif;
-  background: #0d0f14;
+  background: var(--purple-dark);
   color: #fff;
 }
 
 :root {
-  --navbar-height: 56px;
+  --navbar-height: 64px;
   --purple-dark: #1c0a5e;
   --purple-mid: #2d0070;
   --purple-accent: #8a2be2;
@@ -23,4 +23,17 @@ body {
   --teal: #26c6b9;
   --coral: #ff6b6b;
   --navy: #1a1a2e;
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--navbar-height));
+  color: rgba(255, 255, 255, 0.75);
+  background: linear-gradient(
+    180deg,
+    var(--purple-dark) 0%,
+    var(--purple-mid) 100%
+  );
 }

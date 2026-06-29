@@ -7,6 +7,7 @@ import { useMicPitch } from "../../hooks/useMicPitch";
 import { useMidiKeyboard } from "../../hooks/useMidiKeyboard";
 import { playNote } from "../../audio/pianoAudio";
 import { getSavedSelection, saveSelection } from "../../data/songCatalog";
+import "./Playground.css";
 
 const ECHO_SUPPRESS_MS = 1100;
 const ECHO_GLOBAL_MS = 400;

@@ -3,7 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import "./LandingNav.css";
 
 export default function LandingNav() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const startLink = isAuthenticated ? "/playground" : "/register";
 
   return (
@@ -18,11 +18,23 @@ export default function LandingNav() {
         <a href="/#about">About</a>
         <a href="/#songs">Songs</a>
         <a href="/#start">Get started</a>
+        {isAuthenticated && <Link to="/playground">Playground</Link>}
       </nav>
 
-      <Link to={startLink} className="landing-nav-cta">
-        Get started
-      </Link>
+      <div className="landing-nav-actions">
+        {isAuthenticated ? (
+          <>
+            <span className="landing-nav-user">{user?.email}</span>
+            <button type="button" className="landing-nav-cta" onClick={logout}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <Link to={startLink} className="landing-nav-cta">
+            Get started
+          </Link>
+        )}
+      </div>
     </header>
   );
 }

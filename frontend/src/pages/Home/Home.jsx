@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import LandingNav from "../../components/LandingNav/LandingNav";
 import "./Home.css";
 
 const HERO_IMG =
@@ -25,8 +24,6 @@ export default function Home() {
 
   return (
     <div className="landing">
-      <LandingNav />
-
       <section className="landing-hero">
         <div
           className="landing-hero-bg"

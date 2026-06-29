@@ -1,0 +1,8 @@
+.playground-page {
+  min-height: calc(100vh - var(--navbar-height));
+  background: linear-gradient(
+    180deg,
+    var(--purple-dark) 0%,
+    var(--purple-mid) 100%
+  );
+}
