@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { subscriptionApi } from "../../api/client";
+import { AnimatedEnter } from "../../components/AnimatedEnter/AnimatedEnter";
 import "./Pricing.css";
 
 export default function PricingReturn() {
@@ -41,7 +42,7 @@ export default function PricingReturn() {
 
   return (
     <div className="pricing-page">
-      <div className="pricing-shell pricing-return">
+      <AnimatedEnter className="pricing-shell pricing-return" y={16} duration={0.45}>
         {state === "loading" && (
           <>
             <h1>Confirming your payment…</h1>
@@ -71,7 +72,7 @@ export default function PricingReturn() {
             </Link>
           </>
         )}
-      </div>
+      </AnimatedEnter>
     </div>
   );
 }

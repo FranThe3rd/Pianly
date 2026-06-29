@@ -9,13 +9,18 @@ export function AnimatedEnter({
   y = 24,
   duration = 0.55,
   as = "div",
+  ...rest
 }) {
   const reduceMotion = useReducedMotion();
   const Component = motion[as] ?? motion.div;
 
   if (reduceMotion) {
     const Tag = as === "div" ? "div" : as;
-    return <Tag className={className}>{children}</Tag>;
+    return (
+      <Tag className={className} {...rest}>
+        {children}
+      </Tag>
+    );
   }
 
   return (
@@ -24,6 +29,7 @@ export function AnimatedEnter({
       initial={{ opacity: 0, y }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration, delay, ease: EASE }}
+      {...rest}
     >
       {children}
     </Component>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { AnimatedEnter } from "../../components/AnimatedEnter/AnimatedEnter";
 import "../Login/Auth.css";
 
 export default function Register() {
@@ -41,7 +42,7 @@ export default function Register() {
 
   return (
     <div className="auth-page">
-      <form className="auth-card" onSubmit={handleSubmit}>
+      <AnimatedEnter as="form" className="auth-card" y={16} onSubmit={handleSubmit}>
         <h1>Register</h1>
 
         {error && <p className="auth-error">{error}</p>}
@@ -99,7 +100,7 @@ export default function Register() {
         <p className="auth-switch">
           Already have an account? <Link to="/login">Login</Link>
         </p>
-      </form>
+      </AnimatedEnter>
     </div>
   );
 }

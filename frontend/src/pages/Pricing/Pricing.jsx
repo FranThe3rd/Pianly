@@ -7,6 +7,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { subscriptionApi } from "../../api/client";
+import { AnimatedEnter } from "../../components/AnimatedEnter/AnimatedEnter";
 import { stripePromise } from "../../lib/stripe";
 import "./Pricing.css";
 
@@ -38,17 +39,23 @@ export default function Pricing() {
   return (
     <div className="pricing-page">
       <div className="pricing-shell">
-        <header className="pricing-header">
+        <AnimatedEnter as="header" className="pricing-header" y={16} duration={0.45}>
           <span className="pricing-eyebrow">Pianly Pro</span>
           <h1>Unlock every song</h1>
           <p>
             The free plan lets you try <strong>Mary Had A Little Lamb</strong>.
             Go Pro to play the full Medium and Hard catalog.
           </p>
-        </header>
+        </AnimatedEnter>
 
         <div className="pricing-grid">
-          <section className="pricing-card">
+          <AnimatedEnter
+            as="section"
+            className="pricing-card"
+            y={16}
+            delay={0.08}
+            duration={0.5}
+          >
             <div className="pricing-plan">
               <h2>Pro</h2>
               <div className="pricing-amount">
@@ -87,17 +94,23 @@ export default function Pricing() {
                 Upgrade for $8/month
               </button>
             ) : null}
-          </section>
+          </AnimatedEnter>
 
           {!loading && !pro && showCheckout && (
-            <section className="pricing-checkout">
+            <AnimatedEnter
+              as="section"
+              className="pricing-checkout"
+              y={16}
+              delay={0.16}
+              duration={0.5}
+            >
               <EmbeddedCheckoutProvider
                 stripe={stripePromise}
                 options={{ fetchClientSecret }}
               >
                 <EmbeddedCheckout />
               </EmbeddedCheckoutProvider>
-            </section>
+            </AnimatedEnter>
           )}
         </div>
       </div>
