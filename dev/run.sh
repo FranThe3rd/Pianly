@@ -23,6 +23,12 @@ if is_running "$BACKEND_PID" || is_running "$FRONTEND_PID"; then
   exit 1
 fi
 
+echo "Installing frontend dependencies..."
+(
+  cd "$ROOT_DIR/frontend"
+  npm install
+)
+
 echo "Starting backend (Spring Boot)..."
 (
   cd "$ROOT_DIR/backend"
