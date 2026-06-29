@@ -1,10 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ScrollLink from "../ScrollLink/ScrollLink";
 import "./LandingNav.css";
 
 export default function LandingNav() {
   const { isAuthenticated, user, logout } = useAuth();
-  const startLink = isAuthenticated ? "/playground" : "/register";
 
   return (
     <header className="landing-nav">
@@ -14,10 +14,10 @@ export default function LandingNav() {
       </Link>
 
       <nav className="landing-nav-links">
-        <a href="/#progress">Features</a>
-        <a href="/#about">About</a>
+        <ScrollLink to="#progress">Features</ScrollLink>
+        <ScrollLink to="#about">About</ScrollLink>
         <NavLink to="/songs">Songs</NavLink>
-        <a href="/#start">Get started</a>
+        <ScrollLink to="#start">Get started</ScrollLink>
         {isAuthenticated && <Link to="/playground">Playground</Link>}
       </nav>
 
@@ -30,9 +30,9 @@ export default function LandingNav() {
             </button>
           </>
         ) : (
-          <Link to={startLink} className="landing-nav-cta">
+          <ScrollLink to="#start" className="landing-nav-cta">
             Get started
-          </Link>
+          </ScrollLink>
         )}
       </div>
     </header>

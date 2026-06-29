@@ -1,6 +1,7 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { LenisProvider } from "./context/LenisContext";
 import LandingNav from "./components/LandingNav/LandingNav";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home/Home.jsx";
@@ -35,7 +36,9 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppRoutes />
+        <LenisProvider>
+          <AppRoutes />
+        </LenisProvider>
       </BrowserRouter>
     </AuthProvider>
   );

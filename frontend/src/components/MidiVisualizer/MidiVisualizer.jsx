@@ -544,7 +544,13 @@ export default function MidiVisualizer({
         <div className="midi-hit-line" />
       </motion.div>
 
-      <div className="midi-controls-anchor">
+      <motion.div
+        key={midiUrl ?? "controls"}
+        className="midi-controls-anchor"
+        initial={{ opacity: 0, y: -14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="midi-controls">
           <div className="midi-controls-row">
           {songName && (
@@ -674,7 +680,7 @@ export default function MidiVisualizer({
           )}
         </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

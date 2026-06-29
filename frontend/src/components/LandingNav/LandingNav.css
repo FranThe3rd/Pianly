@@ -88,6 +88,9 @@
   text-transform: uppercase;
   text-decoration: none;
   transition: transform 0.15s, box-shadow 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .landing-nav-cta:hover {

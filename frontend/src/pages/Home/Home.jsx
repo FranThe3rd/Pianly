@@ -1,5 +1,10 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ScrollLink from "../../components/ScrollLink/ScrollLink";
+import {
+  AnimatedEnter,
+  AnimatedWords,
+} from "../../components/AnimatedEnter/AnimatedEnter";
 import "./Home.css";
 
 const HERO_IMG =
@@ -36,15 +41,22 @@ export default function Home() {
           <p className="landing-hero-brand">
             <span className="landing-logo-star">✦</span> Pianly
           </p>
-          <h1>Feel the joy of playing the piano</h1>
-          <Link to={startLink} className="landing-btn landing-btn-hero">
-            Get started
-          </Link>
+          <AnimatedWords
+            className="landing-hero-title"
+            as="h1"
+            text="Feel the joy of playing the piano"
+            baseDelay={0.15}
+          />
+          <AnimatedEnter delay={0.85} y={18}>
+            <Link to={startLink} className="landing-btn landing-btn-hero">
+              Get started
+            </Link>
+          </AnimatedEnter>
         </div>
 
-        <a href="#about" className="landing-scroll" aria-label="Scroll down">
+        <ScrollLink to="#about" className="landing-scroll" aria-label="Scroll down">
           ⌄
-        </a>
+        </ScrollLink>
       </section>
 
       <section id="about" className="landing-youve-got-this">

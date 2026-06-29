@@ -126,12 +126,17 @@
   font-weight: 600;
 }
 
-.landing-hero h1 {
+.landing-hero-title {
   margin: 0 0 32px;
   font-size: clamp(2rem, 5vw, 3.25rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.02em;
+}
+
+.landing-hero-title .animated-word {
+  display: inline-block;
+  margin-right: 0.28em;
 }
 
 .landing-btn-hero {
