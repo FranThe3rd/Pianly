@@ -20,6 +20,137 @@ const NOTE_COLOR = {
 const SPARKLE_COUNT = 14;
 const SPARKLE_LIFE = 0.55;
 
+// ----- Sheet-music (notation) view -----
+const LETTER_STEPS = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+const MIDDLE_C_STEP = 4 * 7; // diatonic step number of C4
+
+const SHEET_INK = "#1d1647";
+const SHEET_LINE = "rgba(40, 28, 80, 0.55)";
+const SHEET_ACTIVE = "#7b2cff";
+const SHEET_MISSED = "#d23b3b";
+const SHEET_HIT = "#2fa36b";
+
+// Diatonic (letter-based) staff step for a note name like "C#4" / "Eb5".
+function diatonicStep(noteName) {
+  const m = /^([A-G])([#b]?)(-?\d+)$/.exec(noteName);
+  if (!m) return null;
+  return Number(m[3]) * 7 + LETTER_STEPS[m[1]];
+}
+
+function sheetMetrics(w, h) {
+  const lineGap = Math.min(16, Math.max(8, h / 26));
+  const yMiddleC = h / 2;
+  const playheadX = Math.max(96, w * 0.16);
+  const pxPerSec = (w - playheadX) / LOOK_AHEAD;
+  return { lineGap, yMiddleC, playheadX, pxPerSec };
+}
+
+// Vertical pixel position for a diatonic step value.
+function stepToY(stepFromC4, m) {
+  return m.yMiddleC - stepFromC4 * (m.lineGap / 2);
+}
+
+function drawLedgerLines(ctx, x, stepFromC4, m) {
+  const headW = m.lineGap * 1.5;
+  ctx.strokeStyle = SHEET_LINE;
+  ctx.lineWidth = 1.4;
+  const line = (s) => {
+    const y = stepToY(s, m);
+    ctx.beginPath();
+    ctx.moveTo(x - headW / 2, y);
+    ctx.lineTo(x + headW / 2, y);
+    ctx.stroke();
+  };
+  if (stepFromC4 === 0) line(0); // middle C
+  for (let s = 12; s <= stepFromC4; s += 2) line(s); // above treble
+  for (let s = -12; s >= stepFromC4; s -= 2) line(s); // below bass
+}
+
+function drawSheetBackground(ctx, w, h, m) {
+  const paperTop = m.yMiddleC - 7.5 * m.lineGap;
+  const paperBottom = m.yMiddleC + 7.5 * m.lineGap;
+  const paperH = paperBottom - paperTop;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(248, 246, 255, 0.97)";
+  ctx.beginPath();
+  ctx.roundRect(8, paperTop, w - 16, paperH, 10);
+  ctx.fill();
+
+  ctx.strokeStyle = SHEET_LINE;
+  ctx.lineWidth = 1.4;
+  const drawStaff = (steps) => {
+    for (const s of steps) {
+      const y = stepToY(s, m);
+      ctx.beginPath();
+      ctx.moveTo(16, y);
+      ctx.lineTo(w - 16, y);
+      ctx.stroke();
+    }
+  };
+  drawStaff([2, 4, 6, 8, 10]); // treble: E4..F5
+  drawStaff([-2, -4, -6, -8, -10]); // bass: A3..G2
+
+  // Left brace + clef glyphs
+  ctx.fillStyle = SHEET_INK;
+  ctx.font = `${m.lineGap * 6.5}px "Times New Roman", serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("\uD834\uDD1E", 44, stepToY(6, m)); // treble clef on G4 area
+  ctx.font = `${m.lineGap * 4.5}px "Times New Roman", serif`;
+  ctx.fillText("\uD834\uDD22", 44, stepToY(-6, m)); // bass clef
+
+  // Playhead
+  ctx.fillStyle = "rgba(123, 44, 255, 0.16)";
+  ctx.fillRect(m.playheadX - 2, paperTop, 4, paperH);
+  ctx.fillStyle = "rgba(123, 44, 255, 0.85)";
+  ctx.fillRect(m.playheadX - 1, paperTop, 2, paperH);
+  ctx.restore();
+}
+
+function drawSheetNote(ctx, x, stepFromC4, color, isSharp, m) {
+  const y = stepToY(stepFromC4, m);
+  const rx = m.lineGap * 0.72;
+  const ry = m.lineGap * 0.52;
+
+  drawLedgerLines(ctx, x, stepFromC4, m);
+
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+
+  // Note head (slightly tilted ellipse)
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.32);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Stem
+  const stemUp = stepFromC4 < 6;
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  if (stemUp) {
+    ctx.moveTo(x + rx - 1, y);
+    ctx.lineTo(x + rx - 1, y - m.lineGap * 3.2);
+  } else {
+    ctx.moveTo(x - rx + 1, y);
+    ctx.lineTo(x - rx + 1, y + m.lineGap * 3.2);
+  }
+  ctx.stroke();
+
+  // Accidental
+  if (isSharp) {
+    ctx.font = `${m.lineGap * 2.2}px "Times New Roman", serif`;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("\u266F", x - rx - 2, y);
+  }
+  ctx.restore();
+}
+
 function getNoteLayout(note, currentTime, whiteKeys, width, height) {
   const hitLine = height - 2;
   const timeUntil = note.time - currentTime;
@@ -149,6 +280,7 @@ export default function MidiVisualizer({
   const containerRef = useRef(null);
   const notesRef = useRef([]);
   const rafRef = useRef(null);
+  const drawRef = useRef(null);
   const scheduledRef = useRef([]);
   const hitIdsRef = useRef(new Set());
   const pendingMissIdsRef = useRef(new Set());
@@ -158,6 +290,7 @@ export default function MidiVisualizer({
   const sparklesRef = useRef([]);
   const startOffsetRef = useRef(0);
   const countingInRef = useRef(false);
+  const sheetModeRef = useRef(false);
 
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -167,6 +300,18 @@ export default function MidiVisualizer({
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
   const [countingIn, setCountingIn] = useState(false);
+  const [sheetMode, setSheetMode] = useState(false);
+
+  const toggleSheetMode = useCallback(() => {
+    setSheetMode((on) => {
+      sheetModeRef.current = !on;
+      return !on;
+    });
+    if (Tone.getTransport().state !== "started") {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, []);
 
   const pushKeyState = useCallback(() => {
     onKeyStateChange?.({
@@ -181,6 +326,23 @@ export default function MidiVisualizer({
 
     const { width, height } = container.getBoundingClientRect();
     const currentTime = Tone.getTransport().seconds;
+
+    if (sheetModeRef.current) {
+      const m = sheetMetrics(width, height);
+      const step = diatonicStep(note.name);
+      if (step == null) return;
+      const centerX = m.playheadX + (note.time - currentTime) * m.pxPerSec;
+      const centerY = stepToY(step - MIDDLE_C_STEP, m);
+      spawnHitSparkles(sparklesRef.current, {
+        centerX,
+        centerY,
+        width: m.lineGap * 1.5,
+        height: m.lineGap,
+        isBlack: note.name.includes("#"),
+      });
+      return;
+    }
+
     const layout = getNoteLayout(note, currentTime, whiteKeys, width, height);
     if (!layout) return;
 
@@ -320,35 +482,66 @@ export default function MidiVisualizer({
 
     const active = new Set();
 
-    for (const note of notesRef.current) {
-      const timeUntil = note.time - currentTime;
-      const noteEnd = note.time + note.duration;
+    if (sheetModeRef.current) {
+      const m = sheetMetrics(w, h);
+      drawSheetBackground(ctx, w, h, m);
 
-      if (timeUntil > LOOK_AHEAD || currentTime > noteEnd + 0.05) continue;
+      for (const note of notesRef.current) {
+        const x = m.playheadX + (note.time - currentTime) * m.pxPerSec;
+        if (x < 24 || x > w - 12) continue;
 
-      const hit = hitIdsRef.current.has(note.id);
-      const missed =
-        pendingMissIdsRef.current.has(note.id) ||
-        (!hit && currentTime > note.time + HIT_WINDOW_AFTER);
+        const step = diatonicStep(note.name);
+        if (step == null) continue;
+        const stepFromC4 = step - MIDDLE_C_STEP;
+        const noteEnd = note.time + note.duration;
 
-      if (hit) continue;
+        const hit = hitIdsRef.current.has(note.id);
+        const missed =
+          pendingMissIdsRef.current.has(note.id) ||
+          (!hit && currentTime > note.time + HIT_WINDOW_AFTER);
 
-      if (currentTime >= note.time && currentTime <= noteEnd && !missed) {
-        active.add(note.name);
+        if (currentTime >= note.time && currentTime <= noteEnd && !missed && !hit) {
+          active.add(note.name);
+        }
+
+        let color = SHEET_INK;
+        if (missed) color = SHEET_MISSED;
+        else if (hit) color = SHEET_HIT;
+        else if (active.has(note.name)) color = SHEET_ACTIVE;
+
+        drawSheetNote(ctx, x, stepFromC4, color, note.name.includes("#"), m);
       }
+    } else {
+      for (const note of notesRef.current) {
+        const timeUntil = note.time - currentTime;
+        const noteEnd = note.time + note.duration;
 
-      const layout = getNoteLayout(note, currentTime, whiteKeys, w, h);
-      if (!layout) continue;
+        if (timeUntil > LOOK_AHEAD || currentTime > noteEnd + 0.05) continue;
 
-      if (missed) {
-        ctx.fillStyle = NOTE_COLOR.missed;
-      } else {
-        ctx.fillStyle = layout.isBlack ? NOTE_COLOR.black : NOTE_COLOR.white;
+        const hit = hitIdsRef.current.has(note.id);
+        const missed =
+          pendingMissIdsRef.current.has(note.id) ||
+          (!hit && currentTime > note.time + HIT_WINDOW_AFTER);
+
+        if (hit) continue;
+
+        if (currentTime >= note.time && currentTime <= noteEnd && !missed) {
+          active.add(note.name);
+        }
+
+        const layout = getNoteLayout(note, currentTime, whiteKeys, w, h);
+        if (!layout) continue;
+
+        if (missed) {
+          ctx.fillStyle = NOTE_COLOR.missed;
+        } else {
+          ctx.fillStyle = layout.isBlack ? NOTE_COLOR.black : NOTE_COLOR.white;
+        }
+
+        ctx.beginPath();
+        ctx.roundRect(layout.x, layout.y, layout.width, layout.height, 2);
+        ctx.fill();
       }
-
-      ctx.beginPath();
-      ctx.roundRect(layout.x, layout.y, layout.width, layout.height, 2);
-      ctx.fill();
     }
 
     updateSparkles(sparklesRef.current);
@@ -441,6 +634,10 @@ export default function MidiVisualizer({
   useEffect(() => {
     if (onKeyPressRef) onKeyPressRef.current = handleKeyPress;
   }, [handleKeyPress, onKeyPressRef]);
+
+  useEffect(() => {
+    drawRef.current = draw;
+  }, [draw]);
 
   const play = async () => {
     if (!ready) return;
@@ -541,7 +738,7 @@ export default function MidiVisualizer({
         transition={{ duration: 0.55, ease: "easeOut" }}
       >
         <canvas ref={canvasRef} className="midi-canvas" />
-        <div className="midi-hit-line" />
+        {!sheetMode && <div className="midi-hit-line" />}
       </motion.div>
 
       <motion.div
@@ -569,6 +766,14 @@ export default function MidiVisualizer({
             onClick={onFreePlayToggle}
           >
             Free Play
+          </button>
+          <button
+            type="button"
+            className={sheetMode ? "midi-view-btn active" : "midi-view-btn"}
+            onClick={toggleSheetMode}
+            title="Switch between falling MIDI bars and sheet music notation"
+          >
+            {sheetMode ? "🎼 Sheet" : "🎵 MIDI"}
           </button>
           <button
             type="button"

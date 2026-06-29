@@ -123,6 +123,15 @@
   box-shadow: 0 0 10px rgba(123, 44, 255, 0.4);
 }
 
+.midi-view-btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.midi-view-btn.active {
+  background: var(--purple-bright) !important;
+  box-shadow: 0 0 10px rgba(123, 44, 255, 0.4);
+}
+
 .midi-freeplay-hint {
   color: rgba(255, 255, 255, 0.85);
   font-size: 12px;
