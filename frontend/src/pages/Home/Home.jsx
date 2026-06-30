@@ -5,14 +5,12 @@ import {
   AnimatedEnter,
   AnimatedWords,
 } from "../../components/AnimatedEnter/AnimatedEnter";
+import home1Img from "../../assets/home-1.jpg";
+import home2Img from "../../assets/home-2.jpg";
 import "./Home.css";
 
 const HERO_IMG =
   "https://images.unsplash.com/photo-1520523839897-bd0b52f94555?auto=format&fit=crop&w=1600&q=80";
-const LESSON_IMG =
-  "https://images.unsplash.com/photo-1552422535-c1852634d417?auto=format&fit=crop&w=900&q=80";
-const SONGS_IMG =
-  "https://images.unsplash.com/photo-1511379938542-c1f69419868d?auto=format&fit=crop&w=900&q=80";
 
 function PianoIcon({ className = "" }) {
   return (
@@ -72,7 +70,7 @@ export default function Home() {
         <div className="landing-youve-inner">
           <div className="landing-youve-image-wrap">
             <div className="landing-youve-blob">
-              <img src={LESSON_IMG} alt="Person learning piano at home" />
+              <img src={home1Img} alt="Grand piano in a bright studio space" />
             </div>
             <svg className="landing-teal-line" viewBox="0 0 400 400" aria-hidden="true">
               <path
@@ -118,30 +116,16 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="landing-progress-visual" aria-hidden="true">
-            <div className="landing-phone">
-              <div className="landing-phone-screen">
-                <div className="landing-staff">
-                  <span className="landing-clef">𝄞</span>
-                  <span className="landing-note landing-note-1" />
-                  <span className="landing-note landing-note-2" />
-                  <span className="landing-note landing-note-3" />
-                </div>
-              </div>
-              <span className="landing-phone-check">✓</span>
+          <div className="landing-progress-visual">
+            <div className="landing-progress-photo">
+              <img src={home2Img} alt="Close-up of piano keys" />
             </div>
-            <div className="landing-mini-keys">🎹</div>
           </div>
         </div>
       </section>
 
       <section id="songs" className="landing-songs">
-        <div className="landing-songs-inner">
-          <div className="landing-songs-visual">
-            <div className="landing-songs-phone">
-              <img src={SONGS_IMG} alt="Music and piano practice" />
-            </div>
-          </div>
+        <div className="landing-songs-inner landing-songs-inner--text">
           <div className="landing-songs-text">
             <h2>Play music that you love</h2>
             <p>

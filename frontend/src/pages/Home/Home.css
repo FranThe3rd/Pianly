@@ -312,94 +312,19 @@
   min-height: 280px;
 }
 
-.landing-phone {
-  position: relative;
-  width: min(320px, 90%);
-  aspect-ratio: 16 / 10;
-  border-radius: 20px;
-  background: linear-gradient(145deg, #a855f7, #7c3aed);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-  padding: 12px;
+.landing-progress-photo {
+  width: min(420px, 100%);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  transform: rotate(2deg);
 }
 
-.landing-phone-screen {
+.landing-progress-photo img {
+  display: block;
   width: 100%;
-  height: 100%;
-  border-radius: 12px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.landing-staff {
-  position: relative;
-  width: 80%;
-  height: 60%;
-  background: repeating-linear-gradient(
-    transparent,
-    transparent 11px,
-    rgba(26, 26, 46, 0.15) 11px,
-    rgba(26, 26, 46, 0.15) 12px
-  );
-}
-
-.landing-clef {
-  position: absolute;
-  left: 8%;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 28px;
-  color: var(--navy);
-}
-
-.landing-note {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--teal);
-}
-
-.landing-note-1 {
-  left: 35%;
-  top: 38%;
-}
-
-.landing-note-2 {
-  left: 50%;
-  top: 52%;
-}
-
-.landing-note-3 {
-  left: 65%;
-  top: 42%;
-}
-
-.landing-phone-check {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--teal);
-  color: #fff;
-  font-size: 20px;
-  font-weight: 700;
-  box-shadow: 0 4px 16px rgba(38, 198, 185, 0.5);
-}
-
-.landing-mini-keys {
-  position: absolute;
-  bottom: 0;
-  left: 10%;
-  font-size: 64px;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3));
-  transform: rotate(-8deg);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
 }
 
 /* ── Songs section ── */
@@ -418,18 +343,14 @@
   margin: 0 auto;
 }
 
-.landing-songs-phone {
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(26, 26, 46, 0.12);
-  transform: rotate(-3deg);
+.landing-songs-inner--text {
+  grid-template-columns: 1fr;
+  max-width: 720px;
+  text-align: center;
 }
 
-.landing-songs-phone img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+.landing-songs-inner--text .landing-songs-text {
+  margin: 0 auto;
 }
 
 .landing-songs-text h2 {
@@ -565,12 +486,8 @@
     grid-template-columns: 1fr;
   }
 
-  .landing-songs-inner {
-    direction: rtl;
-  }
-
-  .landing-songs-inner > * {
-    direction: ltr;
+  .landing-songs-inner--text {
+    text-align: left;
   }
 
   .landing-progress-visual {
