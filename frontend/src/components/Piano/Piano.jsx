@@ -1,4 +1,3 @@
-import * as Tone from "tone";
 import { playNote } from "../../audio/pianoAudio";
 import { noteToKeyPosition, buildPianoNotes } from "../../utils/pianoNotes";
 import "./Piano.css";
@@ -19,8 +18,7 @@ export default function Piano({
     }
 
     const scored = await onKeyPress?.(note);
-
-    if (!scored && Tone.getTransport().state !== "started") {
+    if (!scored) {
       await playNote(note);
     }
   };

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
-import { ensurePiano, playNote, scheduleNote } from "../../audio/pianoAudio";
+import { ensurePiano, playNote } from "../../audio/pianoAudio";
 import { buildPianoNotes, getKeyRect } from "../../utils/pianoNotes";
 import "./MidiVisualizer.css";
 
@@ -437,22 +437,10 @@ export default function MidiVisualizer({
     scheduledRef.current = [];
   }, []);
 
-  const schedulePlayback = useCallback(async (fromSongTime = 0) => {
+  const schedulePlayback = useCallback(async () => {
     clearScheduled();
     Tone.getTransport().cancel(0);
     await ensurePiano();
-
-    const speed = playbackSpeedRef.current;
-
-    for (const note of notesRef.current) {
-      if (note.time < fromSongTime - 0.001) continue;
-
-      const transportTime = note.time / speed;
-      const id = Tone.getTransport().schedule((time) => {
-        scheduleNote(note.name, time, note.duration / speed, note.velocity);
-      }, transportTime);
-      scheduledRef.current.push(id);
-    }
   }, [clearScheduled]);
 
   const applyPlaybackSpeed = useCallback(
@@ -474,12 +462,11 @@ export default function MidiVisualizer({
       transport.seconds = songTime / clamped;
 
       if (transport.state !== "stopped") {
-        await schedulePlayback(songTime);
         cancelAnimationFrame(rafRef.current);
         rafRef.current = requestAnimationFrame(drawRef.current);
       }
     },
-    [freePlay, schedulePlayback]
+    [freePlay]
   );
 
   const checkMisses = useCallback(
@@ -678,6 +665,7 @@ export default function MidiVisualizer({
 
       hitIdsRef.current.add(match.id);
       triggerHitSparkle(match);
+      await playNote(noteName, match.duration, match.velocity);
       return true;
     },
     [draw, pushKeyState, resumeAfterMiss, triggerHitSparkle]
