@@ -42,12 +42,12 @@ export default function Home() {
           <AnimatedWords
             className="landing-hero-title"
             as="h1"
-            text="Feel the joy of playing the piano"
+            text="Practice piano by playing real songs"
             baseDelay={0.15}
           />
           <AnimatedEnter delay={0.85} y={18}>
             <Link to={startLink} className="landing-btn landing-btn-hero">
-              Get started
+              Start playing
             </Link>
           </AnimatedEnter>
         </div>
@@ -83,17 +83,17 @@ export default function Home() {
           </div>
 
           <div className="landing-youve-text">
-            <h2>You&apos;ve got this</h2>
+            <h2>Built for everyday practice</h2>
             <p>
-              Whatever your level, progress at your own pace with tailored lessons
-              and real-time feedback. Gain the skills you need to play the songs you
-              love and make your musical dreams come true.
+              Open a song, follow the falling notes, and play at your own speed.
+              Pianly is a focused practice tool — not a full course — so you spend
+              less time in menus and more time at the keys.
             </p>
             <div className="landing-badges">
-              <span className="landing-badge">✦ Editors&apos; Choice</span>
-              <span className="landing-badge">✦ Best App</span>
-              <span className="landing-badge">✦ #1 Education</span>
-              <span className="landing-badge">✦ Learn at home</span>
+              <span className="landing-badge">✦ Falling note guides</span>
+              <span className="landing-badge">✦ Live mic feedback</span>
+              <span className="landing-badge">✦ Easy to hard levels</span>
+              <span className="landing-badge">✦ Any keyboard works</span>
             </div>
           </div>
         </div>
@@ -105,14 +105,14 @@ export default function Home() {
 
         <div className="landing-progress-inner">
           <div className="landing-progress-text">
-            <h2>See your progress in real-time</h2>
+            <h2>Hear what you&apos;re playing</h2>
             <p>
-              Pianly listens to the notes you play — on any piano or keyboard — and
-              gives you immediate feedback, so you know if you&apos;re on track or
-              need a bit more practice.
+              Your microphone picks up each note you hit. Pianly marks hits and
+              misses on the spot, so you can correct mistakes before they turn
+              into habits.
             </p>
             <Link to={startLink} className="landing-btn">
-              Let&apos;s start
+              Open playground
             </Link>
           </div>
 
@@ -127,11 +127,11 @@ export default function Home() {
       <section id="songs" className="landing-songs">
         <div className="landing-songs-inner landing-songs-inner--text">
           <div className="landing-songs-text">
-            <h2>Play music that you love</h2>
+            <h2>Songs from first notes to full pieces</h2>
             <p>
-              Choose from easy, medium, and hard arrangements — from classics like
-              Fur Elise to your favorite themes. Pick a song, follow the falling
-              notes, and watch your accuracy score grow.
+              Start with simple tunes like Hot Cross Buns, move into Clementi, and
+              work up to harder repertoire when you&apos;re ready. Each track shows
+              the notes on screen while you play along.
             </p>
             <Link to="/songs" className="landing-btn landing-btn-outline">
               Browse songs
@@ -155,10 +155,10 @@ export default function Home() {
 
         <div className="landing-cta-inner">
           <PianoIcon className="piano-icon-lg" />
-          <h2>Every musical journey begins with a single note</h2>
+          <h2>Your keyboard is already enough</h2>
           <div className="landing-cta-buttons">
             <Link to={startLink} className="landing-btn">
-              Get Pianly
+              Start practicing
             </Link>
             <Link to="/register" className="landing-btn landing-btn-secondary">
               Create free account

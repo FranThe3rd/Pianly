@@ -13,7 +13,37 @@ export const DIFFICULTIES = [
 const STORAGE_KEY = "pianly-song-selection";
 
 const SONG_DISPLAY_NAMES = {
-  "Mary Had A Little Lamb [SUPER EASY] + Midi Download": "Mary Had A Little Lamb",
+  // Easy
+  "01_Amazing_Grace_easy": "Amazing Grace",
+  "02_Silent_Night_easy": "Silent Night",
+  "03_Auld_Lang_Syne_easy": "Auld Lang Syne",
+  "04_Greensleeves_easy": "Greensleeves",
+  "05_Scarborough_Fair_easy": "Scarborough Fair",
+  "06_Minuet_in_G_easy": "Minuet in G",
+  "07_Prelude_in_C_Bach_easy": "Prelude in C (Bach)",
+  "08_Fur_Elise_opening_easy": "Für Elise (Opening)",
+  "09_Canon_in_D_easy": "Canon in D",
+  "10_Kum_Ba_Yah_easy": "Kum Ba Yah",
+  "11_This_Little_Light_easy": "This Little Light of Mine",
+  "12_Yankee_Doodle_easy": "Yankee Doodle",
+  "13_Frere_Jacques_easy": "Frère Jacques",
+  "14_Deck_the_Halls_easy": "Deck the Halls",
+  "15_Skip_to_My_Lou_easy": "Skip to My Lou",
+  "16_Camptown_Races_easy": "Camptown Races",
+  "Happy Birthday MIDI": "Happy Birthday",
+  "Hot Cross Buns": "Hot Cross Buns",
+  "Jingle Bells - EASY": "Jingle Bells",
+  "Old Macdonald had a farm.mid": "Old MacDonald Had a Farm",
+  "Twinkle Twinkle Little Star (MIDI Version)": "Twinkle, Twinkle, Little Star",
+  "chopsticks-euphemia-allen-easy-piano": "Chopsticks",
+  "london-bridge-easy-piano": "London Bridge",
+  "mary-had-a-little-lamb": "Mary Had a Little Lamb",
+  "ode-to-joy-easy-variation": "Ode to Joy",
+  "row-row-row-your-boat-round": "Row, Row, Row Your Boat",
+  // Medium
+  "clementi-sonatina-no-1-op-36": "Sonatina in C, Op. 36 No. 1",
+  // Hard
+  "fur-elise-beethoven": "Für Elise",
 };
 
 export function isSongFree(song) {
