@@ -318,6 +318,10 @@ export default function MidiVisualizer({
   const playbackSpeedRef = useRef(DEFAULT_PLAYBACK_SPEED);
   const rewindingRef = useRef(false);
   const rewindAnimRef = useRef(null);
+  const freePlayRef = useRef(freePlay);
+  const autoPlayedIdsRef = useRef(new Set());
+
+  freePlayRef.current = freePlay;
 
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -525,8 +529,6 @@ export default function MidiVisualizer({
 
   const applyPlaybackSpeed = useCallback(
     async (newSpeed) => {
-      if (freePlay) return;
-
       const clamped = Math.min(
         MAX_PLAYBACK_SPEED,
         Math.max(MIN_PLAYBACK_SPEED, newSpeed)
@@ -546,12 +548,12 @@ export default function MidiVisualizer({
         rafRef.current = requestAnimationFrame(drawRef.current);
       }
     },
-    [freePlay]
+    []
   );
 
   const checkMisses = useCallback(
     (currentTime) => {
-      if (awaitingMissRef.current || rewindingRef.current) return;
+      if (freePlayRef.current || awaitingMissRef.current || rewindingRef.current) return;
 
       const newlyMissed = [];
 
@@ -629,12 +631,16 @@ export default function MidiVisualizer({
     const active = new Set();
     const missedVisible = new Set();
 
-    const isMissed = (note, hit) =>
-      missedIdsRef.current.has(note.id) ||
-      pendingMissIdsRef.current.has(note.id) ||
-      (!noPauseModeRef.current &&
-        !hit &&
-        currentTime > note.time + HIT_WINDOW_AFTER);
+    const isMissed = (note, hit) => {
+      if (freePlayRef.current) return false;
+      return (
+        missedIdsRef.current.has(note.id) ||
+        pendingMissIdsRef.current.has(note.id) ||
+        (!noPauseModeRef.current &&
+          !hit &&
+          currentTime > note.time + HIT_WINDOW_AFTER)
+      );
+    };
 
     if (sheetModeRef.current) {
       const m = sheetMetrics(w, h);
@@ -652,8 +658,8 @@ export default function MidiVisualizer({
         const hit = hitIdsRef.current.has(note.id);
         const missed = isMissed(note, hit);
 
-        if (currentTime >= note.time && currentTime <= noteEnd && !missed && !hit) {
-          active.add(note.name);
+        if (currentTime >= note.time && currentTime <= noteEnd && !missed) {
+          if (freePlayRef.current || !hit) active.add(note.name);
         }
         if (missed) missedVisible.add(note.name);
 
@@ -677,7 +683,7 @@ export default function MidiVisualizer({
         if (hit) continue;
 
         if (currentTime >= note.time && currentTime <= noteEnd && !missed) {
-          active.add(note.name);
+          if (freePlayRef.current || !hit) active.add(note.name);
         }
         if (missed) missedVisible.add(note.name);
 
@@ -693,6 +699,27 @@ export default function MidiVisualizer({
         ctx.beginPath();
         ctx.roundRect(layout.x, layout.y, layout.width, layout.height, 2);
         ctx.fill();
+      }
+    }
+
+    if (freePlayRef.current && Tone.getTransport().state === "started") {
+      for (const note of notesRef.current) {
+        const noteEnd = note.time + note.duration;
+
+        if (autoPlayedIdsRef.current.has(note.id)) {
+          if (currentTime >= note.time && currentTime <= noteEnd) {
+            active.add(note.name);
+          }
+          continue;
+        }
+
+        if (currentTime >= note.time) {
+          autoPlayedIdsRef.current.add(note.id);
+          hitIdsRef.current.add(note.id);
+          triggerHitSparkle(note);
+          void playNote(note.name, note.duration, note.velocity);
+          if (currentTime <= noteEnd) active.add(note.name);
+        }
       }
     }
 
@@ -715,7 +742,7 @@ export default function MidiVisualizer({
 
     if (activeChanged || missedChanged) {
       activeNotesRef.current = active;
-      if (noPauseModeRef.current) {
+      if (noPauseModeRef.current && !freePlayRef.current) {
         missedNotesRef.current = missedVisible;
       }
       pushKeyState();
@@ -745,6 +772,8 @@ export default function MidiVisualizer({
 
   const handleKeyPress = useCallback(
     async (noteName) => {
+      if (freePlayRef.current) return false;
+
       await Tone.start();
 
       if (awaitingMissRef.current) {
@@ -841,6 +870,7 @@ export default function MidiVisualizer({
           activeNotesRef.current = new Set();
           missedNotesRef.current = new Set();
           sparklesRef.current = [];
+          autoPlayedIdsRef.current = new Set();
           pushKeyState();
           setNotesVisible(true);
         }
@@ -881,6 +911,7 @@ export default function MidiVisualizer({
     activeNotesRef.current = new Set();
     missedNotesRef.current = new Set();
     sparklesRef.current = [];
+    autoPlayedIdsRef.current = new Set();
     pushKeyState();
     cancelAnimationFrame(rafRef.current);
     const canvas = canvasRef.current;
@@ -891,8 +922,15 @@ export default function MidiVisualizer({
   };
 
   useEffect(() => {
-    if (freePlay) stop();
-  }, [freePlay]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!ready) return;
+
+    if (freePlay) {
+      stop();
+      void play();
+    } else {
+      stop();
+    }
+  }, [freePlay, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onResize = () => {
@@ -961,18 +999,18 @@ export default function MidiVisualizer({
               <button
                 type="button"
                 onClick={play}
-                disabled={freePlay || !ready || playing || loading || waitingForMiss}
+                disabled={!ready || playing || loading || waitingForMiss}
               >
                 ▶ Play
               </button>
               <button
                 type="button"
                 onClick={pause}
-                disabled={freePlay || !playing || waitingForMiss}
+                disabled={!playing || waitingForMiss}
               >
                 ⏸ Pause
               </button>
-              <button type="button" onClick={stop} disabled={freePlay || !ready}>
+              <button type="button" onClick={stop} disabled={!ready}>
                 ⏹ Stop
               </button>
             </div>
@@ -1043,24 +1081,22 @@ export default function MidiVisualizer({
                         No Pause
                       </button>
                     </div>
-                    {!freePlay && (
-                      <label className="midi-speed" title="Playback speed">
-                        <span className="midi-speed-label">Speed</span>
-                        <input
-                          type="range"
-                          className="midi-speed-slider"
-                          min={MIN_PLAYBACK_SPEED}
-                          max={MAX_PLAYBACK_SPEED}
-                          step={0.05}
-                          value={playbackSpeed}
-                          disabled={!ready}
-                          onChange={(e) => applyPlaybackSpeed(Number(e.target.value))}
-                        />
-                        <span className="midi-speed-value">
-                          {Math.round(playbackSpeed * 100)}%
-                        </span>
-                      </label>
-                    )}
+                    <label className="midi-speed" title="Playback speed">
+                      <span className="midi-speed-label">Speed</span>
+                      <input
+                        type="range"
+                        className="midi-speed-slider"
+                        min={MIN_PLAYBACK_SPEED}
+                        max={MAX_PLAYBACK_SPEED}
+                        step={0.05}
+                        value={playbackSpeed}
+                        disabled={!ready}
+                        onChange={(e) => applyPlaybackSpeed(Number(e.target.value))}
+                      />
+                      <span className="midi-speed-value">
+                        {Math.round(playbackSpeed * 100)}%
+                      </span>
+                    </label>
                   </div>
 
                   <div className="midi-settings-group">
@@ -1082,6 +1118,7 @@ export default function MidiVisualizer({
                         type="button"
                         className={micEnabled ? "midi-mic-btn active" : "midi-mic-btn"}
                         onClick={onMicToggle}
+                        disabled={freePlay}
                         title="Detect notes from microphone"
                       >
                         🎤 Mic
@@ -1090,30 +1127,35 @@ export default function MidiVisualizer({
                         type="button"
                         className={midiEnabled ? "midi-keyboard-btn active" : "midi-keyboard-btn"}
                         onClick={onMidiToggle}
+                        disabled={freePlay}
                         title="Use a MIDI keyboard"
                       >
                         🎹 Keyboard
                       </button>
                     </div>
-                    {micEnabled && (
-                      <span className="midi-mic-status">
-                        <span className="midi-mic-status-label">Listening</span>
-                        <span className="midi-mic-status-note">
-                          {micListening ? (micDetectedNote ?? "…") : "…"}
-                        </span>
-                      </span>
-                    )}
-                    {midiEnabled && midiConnected && (
-                      <span className="midi-keyboard-status">
-                        <span className="midi-keyboard-status-label">{midiDeviceName}</span>
-                        {midiActiveNote && (
-                          <span className="midi-keyboard-status-note">{midiActiveNote}</span>
+                    {!freePlay && (
+                      <>
+                        {micEnabled && (
+                          <span className="midi-mic-status">
+                            <span className="midi-mic-status-label">Listening</span>
+                            <span className="midi-mic-status-note">
+                              {micListening ? (micDetectedNote ?? "…") : "…"}
+                            </span>
+                          </span>
                         )}
-                      </span>
-                    )}
-                    {micError && <span className="midi-mic-error">{micError}</span>}
-                    {midiEnabled && midiError && (
-                      <span className="midi-mic-error">{midiError}</span>
+                        {midiEnabled && midiConnected && (
+                          <span className="midi-keyboard-status">
+                            <span className="midi-keyboard-status-label">{midiDeviceName}</span>
+                            {midiActiveNote && (
+                              <span className="midi-keyboard-status-note">{midiActiveNote}</span>
+                            )}
+                          </span>
+                        )}
+                        {micError && <span className="midi-mic-error">{micError}</span>}
+                        {midiEnabled && midiError && (
+                          <span className="midi-mic-error">{midiError}</span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1121,7 +1163,7 @@ export default function MidiVisualizer({
                 {(freePlay || (noPauseMode && !freePlay)) && (
                   <p className="midi-settings-hint">
                     {freePlay
-                      ? "Free Play — play any key, no timing required"
+                      ? "Free Play — watch the notes fall and listen along; no input needed"
                       : "No Pause — missed notes turn red, playback keeps going"}
                   </p>
                 )}

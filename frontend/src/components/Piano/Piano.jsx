@@ -12,10 +12,7 @@ export default function Piano({
   freePlay = false,
 }) {
   const handlePress = async (note) => {
-    if (freePlay) {
-      await onKeyPress?.(note);
-      return;
-    }
+    if (freePlay) return;
 
     const scored = await onKeyPress?.(note);
     if (!scored) {

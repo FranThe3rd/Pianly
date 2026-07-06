@@ -1,12 +1,10 @@
 import { useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import * as Tone from "tone";
 import Piano from "../../components/Piano/Piano.jsx";
 import MidiVisualizer from "../../components/MidiVisualizer/MidiVisualizer.jsx";
 import SongSetup from "../../pages/SongSetup/SongSetup.jsx";
 import { useMicPitch } from "../../hooks/useMicPitch";
 import { useMidiKeyboard } from "../../hooks/useMidiKeyboard";
-import { playNote } from "../../audio/pianoAudio";
 import { getSavedSelection, saveSelection } from "../../data/songCatalog";
 import "./Playground.css";
 
@@ -25,7 +23,6 @@ export const Playground = () => {
   const [midiEnabled, setMidiEnabled] = useState(false);
   const [freePlay, setFreePlay] = useState(false);
   const keyPressRef = useRef(null);
-  const flashTimerRef = useRef(null);
   const micSuppressUntilRef = useRef(0);
   const micSuppressNotesRef = useRef(new Map());
   const acceptMicNoteRef = useRef(() => true);
@@ -57,61 +54,31 @@ export const Playground = () => {
 
   acceptMicNoteRef.current = (note) => !isMicSuppressed(note);
 
-  const flashKey = useCallback((note) => {
-    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-    setKeyState({ active: new Set([note]), missed: new Set() });
-    flashTimerRef.current = setTimeout(() => {
-      setKeyState({ active: new Set(), missed: new Set() });
-    }, 180);
-  }, []);
-
-  const playFreeNote = useCallback(
-    async (note) => {
-      await Tone.start();
-      await playNote(note);
-      suppressMicEcho(note);
-      flashKey(note);
-    },
-    [suppressMicEcho, flashKey]
-  );
-
-  const handleMicNote = useCallback(
-    (note) => {
-      if (isMicSuppressed(note)) return;
-      playFreeNote(note);
-    },
-    [isMicSuppressed, playFreeNote]
-  );
-
   const handleMidiNote = useCallback(
     (note) => {
-      if (freePlay) {
-        playFreeNote(note);
-        return;
-      }
+      if (freePlay) return;
       keyPressRef.current?.(note);
     },
-    [freePlay, playFreeNote]
+    [freePlay]
   );
 
   const handlePianoNote = useCallback(
     async (note) => {
-      if (freePlay) {
-        await playFreeNote(note);
-        return true;
-      }
+      if (freePlay) return false;
       return keyPressRef.current?.(note) ?? false;
     },
-    [freePlay, playFreeNote]
+    [freePlay]
   );
 
   const { listening, error: micError, detectedNote } = useMicPitch(
-    freePlay ? handleMicNote : (note) => keyPressRef.current?.(note),
-    micEnabled,
+    (note) => {
+      if (freePlay) return;
+      keyPressRef.current?.(note);
+    },
+    micEnabled && !freePlay,
     {
-      noteCooldownMs: freePlay ? 250 : 200,
+      noteCooldownMs: 200,
       acceptNoteRef: acceptMicNoteRef,
-      freePlay,
     }
   );
 
@@ -124,12 +91,9 @@ export const Playground = () => {
     acceptNoteRef: acceptMicNoteRef,
   });
 
-  const handleKeyStateChange = useCallback(
-    (state) => {
-      if (!freePlay) setKeyState(state);
-    },
-    [freePlay]
-  );
+  const handleKeyStateChange = useCallback((state) => {
+    setKeyState(state);
+  }, []);
 
   if (showSetup) {
     return <SongSetup onConfirm={handleSongConfirm} />;
