@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DIFFICULTIES,
@@ -19,6 +19,22 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
     () => saved?.song?.id ?? SONG_CATALOG.easy[0]?.id ?? null
   );
   const [query, setQuery] = useState("");
+  const gridRef = useRef(null);
+
+  const handleGridWheel = useCallback((event) => {
+    const grid = gridRef.current;
+    if (!grid || grid.scrollHeight <= grid.clientHeight) return;
+
+    const atTop = grid.scrollTop <= 0;
+    const atBottom =
+      grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 1;
+
+    if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    grid.scrollTop += event.deltaY;
+  }, []);
 
   const session = DIFFICULTIES.find((level) => level.id === difficulty);
   const songs = SONG_CATALOG[difficulty] ?? [];
@@ -28,6 +44,14 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
 
     return songs.filter((song) => song.name.toLowerCase().includes(trimmed));
   }, [songs, query]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return undefined;
+
+    grid.addEventListener("wheel", handleGridWheel, { passive: false });
+    return () => grid.removeEventListener("wheel", handleGridWheel);
+  }, [handleGridWheel, filteredSongs.length, difficulty]);
 
   const selectedSong =
     filteredSongs.find((s) => s.id === songId) ?? filteredSongs[0] ?? null;
@@ -112,7 +136,7 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
           ) : filteredSongs.length === 0 ? (
             <p className="song-picker-empty">No songs match &ldquo;{query}&rdquo;.</p>
           ) : (
-            <div className="song-grid">
+            <div ref={gridRef} className="song-grid" data-lenis-prevent>
               {filteredSongs.map((song, index) => {
                 const isActive = selectedSong?.id === song.id;
                 const locked = !isSongUnlocked(song, pro);

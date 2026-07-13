@@ -166,7 +166,10 @@
   gap: 10px;
   max-height: min(50vh, 420px);
   overflow-y: auto;
-  padding-right: 6px;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 .song-grid::-webkit-scrollbar {
