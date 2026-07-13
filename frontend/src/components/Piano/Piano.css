@@ -3,7 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 200px;
+  height: var(--piano-height);
   background: #121212;
   z-index: 1000;
   border-top: 1px solid #2a2a2a;
@@ -26,6 +26,7 @@
   appearance: none;
   cursor: pointer;
   user-select: none;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
 

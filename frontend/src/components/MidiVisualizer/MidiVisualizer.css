@@ -3,7 +3,7 @@
   top: var(--navbar-height);
   left: 0;
   right: 0;
-  bottom: 200px;
+  bottom: var(--piano-height);
   background: linear-gradient(
     180deg,
     var(--purple-dark) 0%,

@@ -11,8 +11,78 @@ const BLACK_KEY_OFFSET = 1;
 export const PIANO_START_MIDI = 21; // A0
 export const PIANO_END_MIDI = 108; // C8
 
+// Below this viewport width we show a reduced keyboard sized to the song
+// (like Simply Piano) instead of the full 88 keys. iPads in landscape
+// (~1024–1194px) fall below this and get the reduced layout too.
+export const FULL_KEYBOARD_MIN_WIDTH = 1280;
+
 export function isPianoMidi(midi) {
   return midi >= PIANO_START_MIDI && midi <= PIANO_END_MIDI;
+}
+
+// Pick how many octaves of "breathing room" a small screen should show at
+// minimum, so a song that only uses a few notes still renders a comfortable,
+// tappable keyboard rather than 3 lonely keys.
+function minOctavesForWidth(width) {
+  if (width >= 768) return 3; // tablets / small landscape
+  if (width >= 480) return 2; // large phones
+  return 2; // phones
+}
+
+// Compute the visible key range for the current device.
+//
+// - Desktop (>= FULL_KEYBOARD_MIN_WIDTH): always the full 88-key grand piano.
+// - Mobile / tablet: fit the keyboard to the notes the song actually uses,
+//   snapped outward to whole octaves (C..B) with a comfortable minimum span.
+//   Songs with a wide range still show every key they need (keys just shrink),
+//   so nothing ever becomes unplayable.
+export function getResponsiveKeyRange(midiValues, viewportWidth) {
+  const full = { startMidi: PIANO_START_MIDI, endMidi: PIANO_END_MIDI };
+
+  if (
+    viewportWidth >= FULL_KEYBOARD_MIN_WIDTH ||
+    !midiValues ||
+    midiValues.length === 0
+  ) {
+    return full;
+  }
+
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const midi of midiValues) {
+    if (midi < lo) lo = midi;
+    if (midi > hi) hi = midi;
+  }
+
+  lo = Math.max(PIANO_START_MIDI, Math.floor(lo));
+  hi = Math.min(PIANO_END_MIDI, Math.ceil(hi));
+  if (lo > hi) return full;
+
+  // Snap the low end down to the nearest C and the high end up to the nearest B
+  // so the keyboard always begins and ends on a natural octave boundary.
+  let startMidi = lo - (((lo % 12) + 12) % 12);
+  let endMidi = hi + (11 - (((hi % 12) + 12) % 12));
+
+  // Guarantee a comfortable minimum width on small screens.
+  const minSpan = minOctavesForWidth(viewportWidth) * 12;
+  let expandLow = true;
+  while (endMidi - startMidi + 1 < minSpan) {
+    if (expandLow && startMidi - 12 >= PIANO_START_MIDI) {
+      startMidi -= 12;
+    } else if (endMidi + 12 <= PIANO_END_MIDI) {
+      endMidi += 12;
+    } else if (startMidi - 12 >= PIANO_START_MIDI) {
+      startMidi -= 12;
+    } else {
+      break;
+    }
+    expandLow = !expandLow;
+  }
+
+  startMidi = Math.max(PIANO_START_MIDI, startMidi);
+  endMidi = Math.min(PIANO_END_MIDI, endMidi);
+
+  return { startMidi, endMidi };
 }
 
 export function buildPianoNotes(

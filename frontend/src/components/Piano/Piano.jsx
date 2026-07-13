@@ -1,8 +1,12 @@
+import { useMemo } from "react";
 import { playNote } from "../../audio/pianoAudio";
-import { noteToKeyPosition, buildPianoNotes } from "../../utils/pianoNotes";
+import {
+  noteToKeyPosition,
+  buildPianoNotes,
+  PIANO_START_MIDI,
+  PIANO_END_MIDI,
+} from "../../utils/pianoNotes";
 import "./Piano.css";
-
-const { white: WHITE_KEYS, black: BLACK_KEYS } = buildPianoNotes();
 
 export default function Piano({
   activeNotes = new Set(),
@@ -10,7 +14,14 @@ export default function Piano({
   onKeyPress,
   micDetectedNote = null,
   freePlay = false,
+  startMidi = PIANO_START_MIDI,
+  endMidi = PIANO_END_MIDI,
 }) {
+  const { white: WHITE_KEYS, black: BLACK_KEYS } = useMemo(
+    () => buildPianoNotes(startMidi, endMidi),
+    [startMidi, endMidi]
+  );
+
   const handlePress = async (note) => {
     if (freePlay) return;
 
@@ -41,7 +52,7 @@ export default function Piano({
           left: `${pos.leftPercent}%`,
           width: `${pos.widthPercent}%`,
         }}
-        onMouseDown={() => handlePress(note)}
+        onPointerDown={() => handlePress(note)}
       />
     );
   };

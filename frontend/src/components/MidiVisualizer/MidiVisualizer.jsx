@@ -1,9 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 import { ensurePiano, playNote } from "../../audio/pianoAudio";
-import { buildPianoNotes, getKeyRect } from "../../utils/pianoNotes";
+import {
+  buildPianoNotes,
+  getKeyRect,
+  getResponsiveKeyRange,
+  PIANO_START_MIDI,
+  PIANO_END_MIDI,
+} from "../../utils/pianoNotes";
 import "./MidiVisualizer.css";
 
 const LOOK_AHEAD = 4;
@@ -245,8 +251,6 @@ function updateSparkles(sparkles) {
   }
 }
 
-const { white: whiteKeys } = buildPianoNotes();
-
 function collectNotes(midi) {
   const notes = [];
   for (const track of midi.tracks) {
@@ -284,6 +288,7 @@ export default function MidiVisualizer({
   onChangeSong,
   onKeyStateChange,
   onKeyPressRef,
+  onRangeChange,
   freePlay = false,
   onFreePlayToggle,
   micEnabled = false,
@@ -322,6 +327,38 @@ export default function MidiVisualizer({
   const autoPlayedIdsRef = useRef(new Set());
 
   freePlayRef.current = freePlay;
+
+  const [keyRange, setKeyRange] = useState({
+    startMidi: PIANO_START_MIDI,
+    endMidi: PIANO_END_MIDI,
+  });
+
+  // whiteKeys must be shared with the on-screen Piano so falling notes line up
+  // with the keys. Kept in a ref so `draw` can read the latest range without
+  // being re-created on every range change.
+  const whiteKeys = useMemo(
+    () => buildPianoNotes(keyRange.startMidi, keyRange.endMidi).white,
+    [keyRange]
+  );
+  const whiteKeysRef = useRef(whiteKeys);
+  whiteKeysRef.current = whiteKeys;
+
+  const onRangeChangeRef = useRef(onRangeChange);
+  onRangeChangeRef.current = onRangeChange;
+
+  // Recompute the visible key range from the loaded song + current viewport.
+  const syncKeyRange = useCallback(() => {
+    const range = getResponsiveKeyRange(
+      notesRef.current.map((n) => n.midi),
+      window.innerWidth
+    );
+    setKeyRange((prev) =>
+      prev.startMidi === range.startMidi && prev.endMidi === range.endMidi
+        ? prev
+        : range
+    );
+    onRangeChangeRef.current?.(range);
+  }, []);
 
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -404,7 +441,13 @@ export default function MidiVisualizer({
       return;
     }
 
-    const layout = getNoteLayout(note, currentTime, whiteKeys, width, height);
+    const layout = getNoteLayout(
+      note,
+      currentTime,
+      whiteKeysRef.current,
+      width,
+      height
+    );
     if (!layout) return;
 
     spawnHitSparkles(sparklesRef.current, layout);
@@ -504,6 +547,7 @@ export default function MidiVisualizer({
       const notes = collectNotes(midi);
       startOffsetRef.current = applyStartOffset(notes);
       notesRef.current = notes;
+      syncKeyRange();
       setDuration(midi.duration);
       setReady(true);
       setLoading(false);
@@ -512,7 +556,7 @@ export default function MidiVisualizer({
     return () => {
       cancelled = true;
     };
-  }, [midiUrl, pushKeyState]);
+  }, [midiUrl, pushKeyState, syncKeyRange]);
 
   const clearScheduled = useCallback(() => {
     for (const id of scheduledRef.current) {
@@ -687,7 +731,13 @@ export default function MidiVisualizer({
         }
         if (missed) missedVisible.add(note.name);
 
-        const layout = getNoteLayout(note, currentTime, whiteKeys, w, h);
+        const layout = getNoteLayout(
+          note,
+          currentTime,
+          whiteKeysRef.current,
+          w,
+          h
+        );
         if (!layout) continue;
 
         if (missed) {
@@ -934,6 +984,7 @@ export default function MidiVisualizer({
 
   useEffect(() => {
     const onResize = () => {
+      syncKeyRange();
       if (
         Tone.getTransport().state === "started" ||
         awaitingMissRef.current ||
@@ -950,7 +1001,16 @@ export default function MidiVisualizer({
       clearScheduled();
       Tone.getTransport().stop();
     };
-  }, [draw, clearScheduled]);
+  }, [draw, clearScheduled, syncKeyRange]);
+
+  // When the visible range changes while paused, redraw once so the falling
+  // notes reposition to match the new keyboard width.
+  useEffect(() => {
+    if (Tone.getTransport().state !== "started") {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(drawRef.current);
+    }
+  }, [keyRange]);
 
   const formatTime = (s) => {
     const m = Math.floor(s / 60);

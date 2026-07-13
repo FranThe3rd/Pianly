@@ -24,6 +24,7 @@ html.lenis body {
 
 :root {
   --navbar-height: 64px;
+  --piano-height: 200px;
   --purple-dark: #1c0a5e;
   --purple-mid: #2d0070;
   --purple-accent: #8a2be2;
@@ -32,6 +33,26 @@ html.lenis body {
   --teal: #26c6b9;
   --coral: #ff6b6b;
   --navy: #1a1a2e;
+}
+
+/* Shrink the on-screen keyboard on smaller devices so it doesn't dominate the
+   screen. Kept in sync with the MidiVisualizer, which reserves this height. */
+@media (max-width: 1023px) {
+  :root {
+    --piano-height: 168px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --piano-height: 132px;
+  }
+}
+
+@media (max-height: 520px) {
+  :root {
+    --piano-height: 120px;
+  }
 }
 
 .page-loading {

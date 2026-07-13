@@ -6,6 +6,7 @@ import SongSetup from "../../pages/SongSetup/SongSetup.jsx";
 import { useMicPitch } from "../../hooks/useMicPitch";
 import { useMidiKeyboard } from "../../hooks/useMidiKeyboard";
 import { getSavedSelection, saveSelection } from "../../data/songCatalog";
+import { PIANO_START_MIDI, PIANO_END_MIDI } from "../../utils/pianoNotes";
 import "./Playground.css";
 
 const ECHO_SUPPRESS_MS = 1100;
@@ -22,6 +23,10 @@ export const Playground = () => {
   const [micEnabled, setMicEnabled] = useState(false);
   const [midiEnabled, setMidiEnabled] = useState(false);
   const [freePlay, setFreePlay] = useState(false);
+  const [keyRange, setKeyRange] = useState({
+    startMidi: PIANO_START_MIDI,
+    endMidi: PIANO_END_MIDI,
+  });
   const keyPressRef = useRef(null);
   const micSuppressUntilRef = useRef(0);
   const micSuppressNotesRef = useRef(new Map());
@@ -95,6 +100,14 @@ export const Playground = () => {
     setKeyState(state);
   }, []);
 
+  const handleRangeChange = useCallback((range) => {
+    setKeyRange((prev) =>
+      prev.startMidi === range.startMidi && prev.endMidi === range.endMidi
+        ? prev
+        : range
+    );
+  }, []);
+
   if (showSetup) {
     return <SongSetup onConfirm={handleSongConfirm} />;
   }
@@ -106,6 +119,7 @@ export const Playground = () => {
         songName={selection?.song.name}
         onChangeSong={() => navigate("/songs")}
         onKeyStateChange={handleKeyStateChange}
+        onRangeChange={handleRangeChange}
         onKeyPressRef={keyPressRef}
         freePlay={freePlay}
         onFreePlayToggle={() => setFreePlay((on) => !on)}
@@ -125,6 +139,8 @@ export const Playground = () => {
         activeNotes={keyState.active}
         missedNotes={keyState.missed}
         freePlay={freePlay}
+        startMidi={keyRange.startMidi}
+        endMidi={keyRange.endMidi}
         onKeyPress={handlePianoNote}
         micDetectedNote={
           midiEnabled && midiActiveNote
