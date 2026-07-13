@@ -7,6 +7,7 @@ import {
   buildPianoNotes,
   getKeyRect,
   getResponsiveKeyRange,
+  FULL_KEYBOARD_MIN_WIDTH,
   PIANO_START_MIDI,
   PIANO_END_MIDI,
 } from "../../utils/pianoNotes";
@@ -373,6 +374,9 @@ export default function MidiVisualizer({
   const [noPauseMode, setNoPauseMode] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(DEFAULT_PLAYBACK_SPEED);
+  // Touch devices (phones / iPads) get a persistent controls button instead of
+  // the auto-hiding desktop control bar.
+  const [isCompact, setIsCompact] = useState(false);
   const settingsRef = useRef(null);
 
   const toggleSheetMode = useCallback(() => {
@@ -900,6 +904,7 @@ export default function MidiVisualizer({
   const play = async () => {
     if (!ready) return;
 
+    if (isCompact) setSettingsOpen(false);
     setLoading(true);
     try {
       await ensurePiano();
@@ -1012,6 +1017,18 @@ export default function MidiVisualizer({
     }
   }, [keyRange]);
 
+  // Detect touch-sized viewports (phones / iPads) so we can swap the
+  // auto-hiding desktop control bar for a persistent controls button.
+  useEffect(() => {
+    const mq = window.matchMedia(
+      `(max-width: ${FULL_KEYBOARD_MIN_WIDTH - 1}px)`
+    );
+    const update = () => setIsCompact(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
@@ -1040,14 +1057,43 @@ export default function MidiVisualizer({
 
       <motion.div
         key={midiUrl ?? "controls"}
-        className="midi-controls-anchor"
+        className={
+          isCompact
+            ? "midi-controls-anchor compact"
+            : "midi-controls-anchor"
+        }
+        ref={settingsRef}
         initial={{ opacity: 0, y: -14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
       >
+        {isCompact && (
+          <button
+            type="button"
+            className={
+              settingsOpen
+                ? "midi-fab open"
+                : hasCustomSettings
+                  ? "midi-fab has-active"
+                  : "midi-fab"
+            }
+            onClick={() => setSettingsOpen((open) => !open)}
+            aria-expanded={settingsOpen}
+            aria-label="Controls"
+            title="Controls"
+          >
+            {settingsOpen ? "✕" : "⚙"}
+          </button>
+        )}
         <div
-          className={playing || waitingForMiss ? "midi-controls dimmed" : "midi-controls"}
-          ref={settingsRef}
+          className={[
+            "midi-controls",
+            isCompact && "compact",
+            isCompact && settingsOpen && "open",
+            !isCompact && (playing || waitingForMiss) && "dimmed",
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
           <div className="midi-controls-row midi-controls-primary">
             {songName && (
@@ -1079,22 +1125,24 @@ export default function MidiVisualizer({
             </span>
             {!ready && <span className="midi-loading">Loading…</span>}
             {loading && <span className="midi-loading">Samples…</span>}
-            <button
-              type="button"
-              className={
-                settingsOpen
-                  ? "midi-settings-btn active"
-                  : hasCustomSettings
-                    ? "midi-settings-btn has-active"
-                    : "midi-settings-btn"
-              }
-              onClick={() => setSettingsOpen((open) => !open)}
-              aria-expanded={settingsOpen}
-              aria-label="Settings"
-              title="Settings"
-            >
-              ⚙ Settings
-            </button>
+            {!isCompact && (
+              <button
+                type="button"
+                className={
+                  settingsOpen
+                    ? "midi-settings-btn active"
+                    : hasCustomSettings
+                      ? "midi-settings-btn has-active"
+                      : "midi-settings-btn"
+                }
+                onClick={() => setSettingsOpen((open) => !open)}
+                aria-expanded={settingsOpen}
+                aria-label="Settings"
+                title="Settings"
+              >
+                ⚙ Settings
+              </button>
+            )}
           </div>
 
           <AnimatePresence>
@@ -1230,8 +1278,10 @@ export default function MidiVisualizer({
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
 
-        <AnimatePresence>
+        <div className="midi-hints">
+          <AnimatePresence>
           {countingIn && (
             <motion.p
               key="count-in"

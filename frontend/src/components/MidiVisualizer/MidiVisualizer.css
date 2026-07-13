@@ -41,9 +41,103 @@
   left: 0;
   right: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   pointer-events: none;
   z-index: 10;
+}
+
+/* Gameplay hints float below the controls and stay visible regardless of
+   whether the control bar is dimmed (desktop) or collapsed (touch). */
+.midi-hints {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  max-width: min(960px, calc(100vw - 32px));
+}
+
+.midi-hints .midi-count-in-hint,
+.midi-hints .midi-miss-hint,
+.midi-hints .midi-device-error {
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(28, 10, 94, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  white-space: normal;
+}
+
+/* ── Touch / compact controls (phones, iPads) ── */
+.midi-fab {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(28, 10, 94, 0.92);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.midi-fab:active {
+  transform: scale(0.94);
+}
+
+.midi-fab.open {
+  background: var(--purple-bright);
+}
+
+.midi-fab.has-active::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 6px rgba(38, 198, 185, 0.6);
+}
+
+.midi-controls-anchor.compact {
+  align-items: stretch;
+}
+
+.midi-controls.compact {
+  position: absolute;
+  top: 56px;
+  right: 12px;
+  width: min(340px, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100vh - var(--navbar-height) - var(--piano-height) - 88px);
+  overflow-y: auto;
+}
+
+.midi-controls.compact:not(.open) {
+  display: none;
+}
+
+/* Never auto-hide on touch devices. */
+.midi-controls.compact.dimmed {
+  opacity: 1;
+  transform: none;
 }
 
 .midi-controls {
