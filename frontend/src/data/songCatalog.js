@@ -156,8 +156,9 @@ function buildCatalog() {
     catalog[difficulty].sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  const freeEasyCount = Math.floor(catalog.easy.length / 2);
   catalog.easy.forEach((song, index) => {
-    song.free = index < 5;
+    song.free = index < freeEasyCount;
   });
 
   return catalog;

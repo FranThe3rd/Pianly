@@ -4,7 +4,7 @@ import { loadStripe } from "@stripe/stripe-js";
 // VITE_STRIPE_PUBLISHABLE_KEY in a .env file for your own account.
 const PUBLISHABLE_KEY =
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ??
-  "pk_test_51TnF3mRq7wuyRJEK1S1idU2FMxyXjWDCBCvYei8ljlB9gNabRv92zkCkU08C3pa8RdHbDLeWRs6OLzPrAEX89IRf00p9zBCDeB";
+  "REDACTED";
 
 // Call loadStripe outside of a component's render to avoid recreating the
 // Stripe object on every render.
