@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:pianly}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:pianly}}
     username: ${PGUSER:postgres}
     password: ${PGPASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -29,3 +29,4 @@ stripe:
 
 app:
   frontend-url: ${FRONTEND_URL:https://pianly.net}
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:}

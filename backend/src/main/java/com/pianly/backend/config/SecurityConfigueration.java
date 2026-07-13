@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -29,20 +30,21 @@ public class SecurityConfigueration {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
+    @Value("${app.cors-allowed-origins:}")
+    private String corsAllowedOrigins;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf()
-                .disable()
+        http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests()
-                .requestMatchers("/api/v1/auth/**", "/api/v1/payments/webhook")
-                .permitAll()
-                .anyRequest()
-                .authenticated()
-                .and()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/api/v1/payments/webhook")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
@@ -51,21 +53,32 @@ public class SecurityConfigueration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        Set<String> origins = new LinkedHashSet<>();
-        origins.add("http://localhost:5173");
-        origins.add("http://127.0.0.1:5173");
-        origins.add("https://pianly.net");
-        origins.add("https://www.pianly.net");
+        Set<String> originPatterns = new LinkedHashSet<>();
+        originPatterns.add("http://localhost:5173");
+        originPatterns.add("http://127.0.0.1:5173");
+        originPatterns.add("https://pianly.net");
+        originPatterns.add("https://www.pianly.net");
+        originPatterns.add("https://*.pianly.net");
 
         String configured = frontendUrl == null ? "" : frontendUrl.replaceAll("/$", "");
         if (!configured.isBlank()) {
-            origins.add(configured);
+            originPatterns.add(configured);
         }
 
-        config.setAllowedOrigins(new ArrayList<>(origins));
+        if (corsAllowedOrigins != null && !corsAllowedOrigins.isBlank()) {
+            for (String origin : corsAllowedOrigins.split(",")) {
+                String trimmed = origin.trim().replaceAll("/$", "");
+                if (!trimmed.isBlank()) {
+                    originPatterns.add(trimmed);
+                }
+            }
+        }
+
+        config.setAllowedOriginPatterns(new ArrayList<>(originPatterns));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
