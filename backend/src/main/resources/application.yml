@@ -1,12 +1,12 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/pianly
+    url: jdbc:postgresql://postgres.railway.internal:5432/railway
     username: postgres
-    password: postgres
+    password: REDACTED
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
@@ -18,8 +18,8 @@ jwt:
   secret-key: ${JWT_SECRET_KEY:REDACTED}
 
 stripe:
-  secret-key: ${STRIPE_SECRET_KEY:sk_test_your_secret_key_here}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  secret-key: REDACTED
+  webhook-secret: REDACTED
   price-amount: 800
   currency: usd
   product-name: "Pianly Pro"
