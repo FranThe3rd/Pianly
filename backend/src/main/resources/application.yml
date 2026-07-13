@@ -29,4 +29,3 @@ stripe:
 
 app:
   frontend-url: ${FRONTEND_URL:https://pianly.net}
-
