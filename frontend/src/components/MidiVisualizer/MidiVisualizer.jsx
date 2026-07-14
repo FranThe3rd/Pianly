@@ -1370,52 +1370,53 @@ export default function MidiVisualizer({
         {!settingsOpen && gameplayHints}
       </motion.div>
 
-      <AnimatePresence>
-        {isCompact &&
-          settingsOpen &&
-          createPortal(
-            <motion.div
-              key="fullscreen-controls"
-              className="midi-fullscreen"
-              ref={settingsRef}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <header className="midi-fullscreen-header">
-                {songName && (
-                  <h2 className="midi-fullscreen-title">{songName}</h2>
-                )}
-                <button
-                  type="button"
-                  className="midi-fullscreen-close"
-                  onClick={() => setSettingsOpen(false)}
-                  aria-label="Close controls"
-                  title="Close"
-                >
-                  ✕
-                </button>
-              </header>
+      {isCompact &&
+        createPortal(
+          <AnimatePresence>
+            {settingsOpen && (
+              <motion.div
+                key="fullscreen-controls"
+                className="midi-fullscreen"
+                ref={settingsRef}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <header className="midi-fullscreen-header">
+                  {songName && (
+                    <h2 className="midi-fullscreen-title">{songName}</h2>
+                  )}
+                  <button
+                    type="button"
+                    className="midi-fullscreen-close"
+                    onClick={() => setSettingsOpen(false)}
+                    aria-label="Close controls"
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </header>
 
-              <div className="midi-fullscreen-scroll">
-                <div className="midi-controls midi-fullscreen-panel">
-                  <div className="midi-fullscreen-section">
-                    <span className="midi-settings-label">Playback</span>
-                    <div className="midi-controls-row midi-controls-primary midi-fullscreen-transport">
-                      {playbackControls}
+                <div className="midi-fullscreen-scroll">
+                  <div className="midi-controls midi-fullscreen-panel">
+                    <div className="midi-fullscreen-section">
+                      <span className="midi-settings-label">Playback</span>
+                      <div className="midi-controls-row midi-controls-primary midi-fullscreen-transport">
+                        {playbackControls}
+                      </div>
+                    </div>
+
+                    <div className="midi-fullscreen-section">
+                      {settingsPanelContent}
                     </div>
                   </div>
-
-                  <div className="midi-fullscreen-section">
-                    {settingsPanelContent}
-                  </div>
                 </div>
-              </div>
-            </motion.div>,
-            document.body
-          )}
-      </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </div>
   );
 }
