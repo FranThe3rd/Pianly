@@ -66,6 +66,15 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
     setSongId(first?.id ?? null);
   };
 
+  const handleSongSelect = (song) => {
+    if (!isSongUnlocked(song, pro)) {
+      navigate("/pricing");
+      return;
+    }
+    setSongId(song.id);
+    onConfirm(difficulty, song);
+  };
+
   const handleConfirm = () => {
     if (!selectedSong) return;
     if (selectedLocked) {
@@ -150,7 +159,7 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
                       (locked ? " locked" : "")
                     }
                     style={{ animationDelay: `${index * 45}ms` }}
-                    onClick={() => setSongId(song.id)}
+                    onClick={() => handleSongSelect(song)}
                     aria-pressed={isActive}
                   >
                     <span className="song-tile-index">

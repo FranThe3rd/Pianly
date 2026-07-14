@@ -186,6 +186,17 @@ export function saveSelection(difficulty, songId) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ difficulty, songId }));
 }
 
+export function getNextSong(difficulty, currentSongId, isPro = false) {
+  const songs = SONG_CATALOG[difficulty] ?? [];
+  const idx = songs.findIndex((s) => s.id === currentSongId);
+  if (idx === -1) return null;
+
+  for (let i = idx + 1; i < songs.length; i++) {
+    if (isSongUnlocked(songs[i], isPro)) return songs[i];
+  }
+  return null;
+}
+
 export function getSongCoverUrl(songId) {
   return `https://picsum.photos/seed/${encodeURIComponent(songId)}/200/200`;
 }

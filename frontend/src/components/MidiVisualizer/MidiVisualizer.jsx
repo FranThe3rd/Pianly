@@ -291,6 +291,8 @@ export default function MidiVisualizer({
   onKeyStateChange,
   onKeyPressRef,
   onRangeChange,
+  autoPlayRequest = 0,
+  onSongComplete,
   freePlay = false,
   onFreePlayToggle,
   micEnabled = false,
@@ -327,6 +329,9 @@ export default function MidiVisualizer({
   const rewindAnimRef = useRef(null);
   const freePlayRef = useRef(freePlay);
   const autoPlayedIdsRef = useRef(new Set());
+  const songCompletedRef = useRef(false);
+  const onSongCompleteRef = useRef(onSongComplete);
+  onSongCompleteRef.current = onSongComplete;
 
   freePlayRef.current = freePlay;
 
@@ -539,6 +544,7 @@ export default function MidiVisualizer({
     missedNotesRef.current = new Set();
     sparklesRef.current = [];
     notesRef.current = [];
+    songCompletedRef.current = false;
     Tone.getTransport().stop();
     Tone.getTransport().seconds = 0;
     for (const id of scheduledRef.current) {
@@ -816,6 +822,28 @@ export default function MidiVisualizer({
     }
 
     if (
+      Tone.getTransport().state === "started" &&
+      !awaitingMissRef.current &&
+      !rewindingRef.current &&
+      !freePlayRef.current &&
+      !songCompletedRef.current &&
+      notesRef.current.length > 0
+    ) {
+      let songEnd = 0;
+      for (const note of notesRef.current) {
+        songEnd = Math.max(songEnd, note.time + note.duration);
+      }
+
+      if (currentTime >= songEnd - 0.05) {
+        songCompletedRef.current = true;
+        Tone.getTransport().pause();
+        setPlaying(false);
+        cancelAnimationFrame(rafRef.current);
+        onSongCompleteRef.current?.();
+      }
+    }
+
+    if (
       Tone.getTransport().state === "started" ||
       awaitingMissRef.current ||
       rewindingRef.current ||
@@ -915,6 +943,7 @@ export default function MidiVisualizer({
         if (isFreshStart) {
           await schedulePlayback();
           Tone.getTransport().seconds = 0;
+          songCompletedRef.current = false;
           hitIdsRef.current = new Set();
           missedIdsRef.current = new Set();
           pendingMissIdsRef.current = new Set();
@@ -987,6 +1016,11 @@ export default function MidiVisualizer({
       stop();
     }
   }, [freePlay, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!ready || !autoPlayRequest || freePlay) return;
+    void play();
+  }, [ready, autoPlayRequest, midiUrl, freePlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onResize = () => {

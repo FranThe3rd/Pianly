@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import SongPicker from "../../components/SongPicker/SongPicker";
+import LandscapeGate from "../../components/LandscapeGate/LandscapeGate";
 import { saveSelection } from "../../data/songCatalog";
 
 export default function Songs() {
@@ -11,12 +12,16 @@ export default function Songs() {
     saveSelection(difficulty, song.id);
 
     if (isAuthenticated) {
-      navigate("/playground");
+      navigate("/playground", { state: { autoPlay: true } });
       return;
     }
 
     navigate("/login", { state: { from: "/playground" } });
   };
 
-  return <SongPicker onConfirm={handleConfirm} />;
+  return (
+    <LandscapeGate>
+      <SongPicker onConfirm={handleConfirm} />
+    </LandscapeGate>
+  );
 }
