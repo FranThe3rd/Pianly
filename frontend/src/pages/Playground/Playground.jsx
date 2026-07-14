@@ -2,6 +2,7 @@ import { useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Piano from "../../components/Piano/Piano.jsx";
 import MidiVisualizer from "../../components/MidiVisualizer/MidiVisualizer.jsx";
+import LandscapeGate from "../../components/LandscapeGate/LandscapeGate.jsx";
 import SongSetup from "../../pages/SongSetup/SongSetup.jsx";
 import { useMicPitch } from "../../hooks/useMicPitch";
 import { useMidiKeyboard } from "../../hooks/useMidiKeyboard";
@@ -109,10 +110,15 @@ export const Playground = () => {
   }, []);
 
   if (showSetup) {
-    return <SongSetup onConfirm={handleSongConfirm} />;
+    return (
+      <LandscapeGate>
+        <SongSetup onConfirm={handleSongConfirm} />
+      </LandscapeGate>
+    );
   }
 
   return (
+    <LandscapeGate>
     <div className="playground-page">
       <MidiVisualizer
         midiUrl={selection?.song.url}
@@ -151,6 +157,7 @@ export const Playground = () => {
         }
       />
     </div>
+    </LandscapeGate>
   );
 };
 

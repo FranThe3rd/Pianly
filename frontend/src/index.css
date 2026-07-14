@@ -55,6 +55,14 @@ html.lenis body {
   }
 }
 
+/* Mobile landscape — maximize room for falling notes + controls panel */
+@media (max-width: 900px) and (orientation: landscape) {
+  :root {
+    --navbar-height: 56px;
+    --piano-height: 108px;
+  }
+}
+
 .page-loading {
   display: flex;
   align-items: center;

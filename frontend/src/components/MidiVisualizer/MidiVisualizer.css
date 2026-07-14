@@ -100,10 +100,6 @@
   transform: scale(0.94);
 }
 
-.midi-fab.open {
-  background: var(--purple-bright);
-}
-
 .midi-fab.has-active::after {
   content: "";
   position: absolute;
@@ -120,24 +116,159 @@
   align-items: stretch;
 }
 
-.midi-controls.compact {
-  position: absolute;
-  top: 56px;
-  right: 12px;
-  width: min(340px, calc(100vw - 24px));
-  max-width: none;
-  max-height: calc(100vh - var(--navbar-height) - var(--piano-height) - 88px);
-  overflow-y: auto;
+/* Full-screen controls overlay on touch devices (portaled to body) */
+.midi-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  background: linear-gradient(
+    180deg,
+    var(--purple-dark) 0%,
+    var(--purple-mid) 55%,
+    #1a0a4a 100%
+  );
+  touch-action: pan-y;
 }
 
-.midi-controls.compact:not(.open) {
-  display: none;
+.midi-fullscreen-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: max(12px, env(safe-area-inset-top, 12px)) max(16px, env(safe-area-inset-right, 16px))
+    12px max(16px, env(safe-area-inset-left, 16px));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(18, 6, 64, 0.95);
+  backdrop-filter: blur(10px);
 }
 
-/* Never auto-hide on touch devices. */
-.midi-controls.compact.dimmed {
-  opacity: 1;
-  transform: none;
+.midi-fullscreen-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.midi-fullscreen-close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.midi-fullscreen-close:active {
+  transform: scale(0.94);
+  background: var(--purple-bright);
+}
+
+.midi-fullscreen-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: 16px max(16px, env(safe-area-inset-right, 16px))
+    max(24px, env(safe-area-inset-bottom, 24px)) max(16px, env(safe-area-inset-left, 16px));
+}
+
+.midi-fullscreen-panel {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+  background: rgba(28, 10, 94, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+}
+
+.midi-fullscreen-section + .midi-fullscreen-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.midi-fullscreen .midi-fullscreen-transport {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  white-space: normal;
+}
+
+.midi-fullscreen .midi-transport {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.midi-fullscreen .midi-time {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+}
+
+.midi-fullscreen .midi-settings-panel {
+  overflow: visible;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.midi-fullscreen .midi-settings-grid {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.midi-fullscreen .midi-settings-group {
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.midi-fullscreen .midi-settings-label {
+  font-size: 11px;
+}
+
+.midi-fullscreen .midi-controls button {
+  min-height: 40px;
+  font-size: 14px;
+}
+
+@media (orientation: landscape) and (max-width: 1279px) {
+  .midi-fullscreen .midi-settings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.midi-controls-header {
+  flex-shrink: 0;
+  padding: 10px 14px;
 }
 
 .midi-controls {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
@@ -402,7 +403,7 @@ export default function MidiVisualizer({
   }, []);
 
   useEffect(() => {
-    if (!settingsOpen) return;
+    if (!settingsOpen || isCompact) return;
     const onPointerDown = (e) => {
       if (settingsRef.current && !settingsRef.current.contains(e.target)) {
         setSettingsOpen(false);
@@ -410,7 +411,7 @@ export default function MidiVisualizer({
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [settingsOpen]);
+  }, [settingsOpen, isCompact]);
 
   const pushKeyState = useCallback(() => {
     onKeyStateChange?.({
@@ -1029,6 +1030,16 @@ export default function MidiVisualizer({
     return () => mq.removeEventListener("change", update);
   }, []);
 
+  // Prevent background scroll while the full-screen mobile panel is open.
+  useEffect(() => {
+    if (!isCompact || !settingsOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isCompact, settingsOpen]);
+
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
@@ -1042,6 +1053,232 @@ export default function MidiVisualizer({
     micEnabled ||
     midiEnabled ||
     playbackSpeed !== DEFAULT_PLAYBACK_SPEED;
+
+  const settingsPanelContent = (
+    <>
+      <div className="midi-settings-grid">
+        <div className="midi-settings-group">
+          <span className="midi-settings-label">Song</span>
+          {onChangeSong && (
+            <button
+              type="button"
+              className="midi-change-song-btn"
+              onClick={onChangeSong}
+            >
+              Change song
+            </button>
+          )}
+        </div>
+
+        <div className="midi-settings-group">
+          <span className="midi-settings-label">Practice</span>
+          <div className="midi-settings-toggles">
+            <button
+              type="button"
+              className={freePlay ? "midi-mode-btn active" : "midi-mode-btn"}
+              onClick={onFreePlayToggle}
+            >
+              Free Play
+            </button>
+            <button
+              type="button"
+              className={noPauseMode ? "midi-mode-btn active" : "midi-mode-btn"}
+              onClick={toggleNoPauseMode}
+              disabled={freePlay || waitingForMiss}
+              title="Keep playing when you miss notes"
+            >
+              No Pause
+            </button>
+          </div>
+          <label className="midi-speed" title="Playback speed">
+            <span className="midi-speed-label">Speed</span>
+            <input
+              type="range"
+              className="midi-speed-slider"
+              min={MIN_PLAYBACK_SPEED}
+              max={MAX_PLAYBACK_SPEED}
+              step={0.05}
+              value={playbackSpeed}
+              disabled={!ready}
+              onChange={(e) => applyPlaybackSpeed(Number(e.target.value))}
+            />
+            <span className="midi-speed-value">
+              {Math.round(playbackSpeed * 100)}%
+            </span>
+          </label>
+        </div>
+
+        <div className="midi-settings-group">
+          <span className="midi-settings-label">Display</span>
+          <button
+            type="button"
+            className={sheetMode ? "midi-view-btn active" : "midi-view-btn"}
+            onClick={toggleSheetMode}
+            title="Switch between falling notes and sheet music"
+          >
+            {sheetMode ? "🎼 Sheet music" : "🎵 Falling notes"}
+          </button>
+        </div>
+
+        <div className="midi-settings-group">
+          <span className="midi-settings-label">Input</span>
+          <div className="midi-settings-toggles">
+            <button
+              type="button"
+              className={micEnabled ? "midi-mic-btn active" : "midi-mic-btn"}
+              onClick={onMicToggle}
+              disabled={freePlay}
+              title="Detect notes from microphone"
+            >
+              🎤 Mic
+            </button>
+            <button
+              type="button"
+              className={
+                midiEnabled ? "midi-keyboard-btn active" : "midi-keyboard-btn"
+              }
+              onClick={onMidiToggle}
+              disabled={freePlay}
+              title="Use a MIDI keyboard"
+            >
+              🎹 Keyboard
+            </button>
+          </div>
+          {!freePlay && (
+            <>
+              {micEnabled && (
+                <span className="midi-mic-status">
+                  <span className="midi-mic-status-label">Listening</span>
+                  <span className="midi-mic-status-note">
+                    {micListening ? (micDetectedNote ?? "…") : "…"}
+                  </span>
+                </span>
+              )}
+              {midiEnabled && midiConnected && (
+                <span className="midi-keyboard-status">
+                  <span className="midi-keyboard-status-label">
+                    {midiDeviceName}
+                  </span>
+                  {midiActiveNote && (
+                    <span className="midi-keyboard-status-note">
+                      {midiActiveNote}
+                    </span>
+                  )}
+                </span>
+              )}
+              {micError && <span className="midi-mic-error">{micError}</span>}
+              {midiEnabled && midiError && (
+                <span className="midi-mic-error">{midiError}</span>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {(freePlay || (noPauseMode && !freePlay)) && (
+        <p className="midi-settings-hint">
+          {freePlay
+            ? "Free Play — watch the notes fall and listen along; no input needed"
+            : "No Pause — missed notes turn red, playback keeps going"}
+        </p>
+      )}
+    </>
+  );
+
+  const playbackControls = (
+    <>
+      <div className="midi-transport">
+        <button
+          type="button"
+          onClick={play}
+          disabled={!ready || playing || loading || waitingForMiss}
+        >
+          ▶ Play
+        </button>
+        <button
+          type="button"
+          onClick={pause}
+          disabled={!playing || waitingForMiss}
+        >
+          ⏸ Pause
+        </button>
+        <button type="button" onClick={stop} disabled={!ready}>
+          ⏹ Stop
+        </button>
+      </div>
+      <span className="midi-time">
+        {formatTime(progress)} / {formatTime(duration)}
+      </span>
+      {!ready && <span className="midi-loading">Loading…</span>}
+      {loading && <span className="midi-loading">Samples…</span>}
+    </>
+  );
+
+  const transportControls = (
+    <>
+      {songName && (
+        <span className="midi-song-name" title={songName}>
+          {songName}
+        </span>
+      )}
+      {playbackControls}
+    </>
+  );
+
+  const gameplayHints = (
+    <div className="midi-hints">
+      <AnimatePresence>
+        {countingIn && (
+          <motion.p
+            key="count-in"
+            className="midi-count-in-hint"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            Get ready — watch the notes fall
+          </motion.p>
+        )}
+        {rewinding && (
+          <motion.p
+            key="rewind-hint"
+            className="midi-count-in-hint"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            Going back to missed note…
+          </motion.p>
+        )}
+        {waitingForMiss && !rewinding && (
+          <motion.p
+            key="miss-hint"
+            className="midi-miss-hint"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            Rewound — play the red note at the playhead to continue
+          </motion.p>
+        )}
+        {midiEnabled && midiError && (
+          <motion.p
+            key="midi-error"
+            className="midi-device-error"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+          >
+            {midiError}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 
   return (
     <div className="midi-visualizer" ref={containerRef}>
@@ -1062,277 +1299,123 @@ export default function MidiVisualizer({
             ? "midi-controls-anchor compact"
             : "midi-controls-anchor"
         }
-        ref={settingsRef}
+        ref={!isCompact ? settingsRef : undefined}
         initial={{ opacity: 0, y: -14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
       >
-        {isCompact && (
+        {isCompact && !settingsOpen && (
           <button
             type="button"
             className={
-              settingsOpen
-                ? "midi-fab open"
-                : hasCustomSettings
-                  ? "midi-fab has-active"
-                  : "midi-fab"
+              hasCustomSettings ? "midi-fab has-active" : "midi-fab"
             }
-            onClick={() => setSettingsOpen((open) => !open)}
+            onClick={() => setSettingsOpen(true)}
             aria-expanded={settingsOpen}
             aria-label="Controls"
             title="Controls"
           >
-            {settingsOpen ? "✕" : "⚙"}
+            ⚙
           </button>
         )}
-        <div
-          className={[
-            "midi-controls",
-            isCompact && "compact",
-            isCompact && settingsOpen && "open",
-            !isCompact && (playing || waitingForMiss) && "dimmed",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        >
-          <div className="midi-controls-row midi-controls-primary">
-            {songName && (
-              <span className="midi-song-name" title={songName}>
-                {songName}
-              </span>
-            )}
-            <div className="midi-transport">
-              <button
-                type="button"
-                onClick={play}
-                disabled={!ready || playing || loading || waitingForMiss}
-              >
-                ▶ Play
-              </button>
-              <button
-                type="button"
-                onClick={pause}
-                disabled={!playing || waitingForMiss}
-              >
-                ⏸ Pause
-              </button>
-              <button type="button" onClick={stop} disabled={!ready}>
-                ⏹ Stop
-              </button>
+
+        {!isCompact && (
+          <div
+            className={[
+              "midi-controls",
+              (playing || waitingForMiss) && "dimmed",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <div className="midi-controls-header">
+              <div className="midi-controls-row midi-controls-primary">
+                {transportControls}
+                <button
+                  type="button"
+                  className={
+                    settingsOpen
+                      ? "midi-settings-btn active"
+                      : hasCustomSettings
+                        ? "midi-settings-btn has-active"
+                        : "midi-settings-btn"
+                  }
+                  onClick={() => setSettingsOpen((open) => !open)}
+                  aria-expanded={settingsOpen}
+                  aria-label="Settings"
+                  title="Settings"
+                >
+                  ⚙ Settings
+                </button>
+              </div>
             </div>
-            <span className="midi-time">
-              {formatTime(progress)} / {formatTime(duration)}
-            </span>
-            {!ready && <span className="midi-loading">Loading…</span>}
-            {loading && <span className="midi-loading">Samples…</span>}
-            {!isCompact && (
-              <button
-                type="button"
-                className={
-                  settingsOpen
-                    ? "midi-settings-btn active"
-                    : hasCustomSettings
-                      ? "midi-settings-btn has-active"
-                      : "midi-settings-btn"
-                }
-                onClick={() => setSettingsOpen((open) => !open)}
-                aria-expanded={settingsOpen}
-                aria-label="Settings"
-                title="Settings"
-              >
-                ⚙ Settings
-              </button>
-            )}
+
+            <AnimatePresence>
+              {settingsOpen && (
+                <motion.div
+                  key="settings-panel"
+                  className="midi-settings-panel"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                >
+                  {settingsPanelContent}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+        )}
 
-          <AnimatePresence>
-            {settingsOpen && (
-              <motion.div
-                key="settings-panel"
-                className="midi-settings-panel"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
-              >
-                <div className="midi-settings-grid">
-                  <div className="midi-settings-group">
-                    <span className="midi-settings-label">Song</span>
-                    {onChangeSong && (
-                      <button
-                        type="button"
-                        className="midi-change-song-btn"
-                        onClick={onChangeSong}
-                      >
-                        Change song
-                      </button>
-                    )}
-                  </div>
+        {!settingsOpen && gameplayHints}
+      </motion.div>
 
-                  <div className="midi-settings-group">
-                    <span className="midi-settings-label">Practice</span>
-                    <div className="midi-settings-toggles">
-                      <button
-                        type="button"
-                        className={freePlay ? "midi-mode-btn active" : "midi-mode-btn"}
-                        onClick={onFreePlayToggle}
-                      >
-                        Free Play
-                      </button>
-                      <button
-                        type="button"
-                        className={noPauseMode ? "midi-mode-btn active" : "midi-mode-btn"}
-                        onClick={toggleNoPauseMode}
-                        disabled={freePlay || waitingForMiss}
-                        title="Keep playing when you miss notes"
-                      >
-                        No Pause
-                      </button>
+      <AnimatePresence>
+        {isCompact &&
+          settingsOpen &&
+          createPortal(
+            <motion.div
+              key="fullscreen-controls"
+              className="midi-fullscreen"
+              ref={settingsRef}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <header className="midi-fullscreen-header">
+                {songName && (
+                  <h2 className="midi-fullscreen-title">{songName}</h2>
+                )}
+                <button
+                  type="button"
+                  className="midi-fullscreen-close"
+                  onClick={() => setSettingsOpen(false)}
+                  aria-label="Close controls"
+                  title="Close"
+                >
+                  ✕
+                </button>
+              </header>
+
+              <div className="midi-fullscreen-scroll">
+                <div className="midi-controls midi-fullscreen-panel">
+                  <div className="midi-fullscreen-section">
+                    <span className="midi-settings-label">Playback</span>
+                    <div className="midi-controls-row midi-controls-primary midi-fullscreen-transport">
+                      {playbackControls}
                     </div>
-                    <label className="midi-speed" title="Playback speed">
-                      <span className="midi-speed-label">Speed</span>
-                      <input
-                        type="range"
-                        className="midi-speed-slider"
-                        min={MIN_PLAYBACK_SPEED}
-                        max={MAX_PLAYBACK_SPEED}
-                        step={0.05}
-                        value={playbackSpeed}
-                        disabled={!ready}
-                        onChange={(e) => applyPlaybackSpeed(Number(e.target.value))}
-                      />
-                      <span className="midi-speed-value">
-                        {Math.round(playbackSpeed * 100)}%
-                      </span>
-                    </label>
                   </div>
 
-                  <div className="midi-settings-group">
-                    <span className="midi-settings-label">Display</span>
-                    <button
-                      type="button"
-                      className={sheetMode ? "midi-view-btn active" : "midi-view-btn"}
-                      onClick={toggleSheetMode}
-                      title="Switch between falling notes and sheet music"
-                    >
-                      {sheetMode ? "🎼 Sheet music" : "🎵 Falling notes"}
-                    </button>
-                  </div>
-
-                  <div className="midi-settings-group">
-                    <span className="midi-settings-label">Input</span>
-                    <div className="midi-settings-toggles">
-                      <button
-                        type="button"
-                        className={micEnabled ? "midi-mic-btn active" : "midi-mic-btn"}
-                        onClick={onMicToggle}
-                        disabled={freePlay}
-                        title="Detect notes from microphone"
-                      >
-                        🎤 Mic
-                      </button>
-                      <button
-                        type="button"
-                        className={midiEnabled ? "midi-keyboard-btn active" : "midi-keyboard-btn"}
-                        onClick={onMidiToggle}
-                        disabled={freePlay}
-                        title="Use a MIDI keyboard"
-                      >
-                        🎹 Keyboard
-                      </button>
-                    </div>
-                    {!freePlay && (
-                      <>
-                        {micEnabled && (
-                          <span className="midi-mic-status">
-                            <span className="midi-mic-status-label">Listening</span>
-                            <span className="midi-mic-status-note">
-                              {micListening ? (micDetectedNote ?? "…") : "…"}
-                            </span>
-                          </span>
-                        )}
-                        {midiEnabled && midiConnected && (
-                          <span className="midi-keyboard-status">
-                            <span className="midi-keyboard-status-label">{midiDeviceName}</span>
-                            {midiActiveNote && (
-                              <span className="midi-keyboard-status-note">{midiActiveNote}</span>
-                            )}
-                          </span>
-                        )}
-                        {micError && <span className="midi-mic-error">{micError}</span>}
-                        {midiEnabled && midiError && (
-                          <span className="midi-mic-error">{midiError}</span>
-                        )}
-                      </>
-                    )}
+                  <div className="midi-fullscreen-section">
+                    {settingsPanelContent}
                   </div>
                 </div>
-
-                {(freePlay || (noPauseMode && !freePlay)) && (
-                  <p className="midi-settings-hint">
-                    {freePlay
-                      ? "Free Play — watch the notes fall and listen along; no input needed"
-                      : "No Pause — missed notes turn red, playback keeps going"}
-                  </p>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div className="midi-hints">
-          <AnimatePresence>
-          {countingIn && (
-            <motion.p
-              key="count-in"
-              className="midi-count-in-hint"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              Get ready — watch the notes fall
-            </motion.p>
+              </div>
+            </motion.div>,
+            document.body
           )}
-          {rewinding && (
-            <motion.p
-              key="rewind-hint"
-              className="midi-count-in-hint"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              Going back to missed note…
-            </motion.p>
-          )}
-          {waitingForMiss && !rewinding && (
-            <motion.p
-              key="miss-hint"
-              className="midi-miss-hint"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              Rewound — play the red note at the playhead to continue
-            </motion.p>
-          )}
-          {midiEnabled && midiError && (
-            <motion.p
-              key="midi-error"
-              className="midi-device-error"
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-            >
-              {midiError}
-            </motion.p>
-          )}
-        </AnimatePresence>
-        </div>
-      </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

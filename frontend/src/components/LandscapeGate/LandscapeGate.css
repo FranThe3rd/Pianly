@@ -1,0 +1,54 @@
+.landscape-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(
+    180deg,
+    var(--purple-dark) 0%,
+    var(--purple-mid) 100%
+  );
+}
+
+.landscape-gate-card {
+  max-width: 320px;
+  padding: 28px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(28, 10, 94, 0.92);
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.landscape-gate-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: landscape-gate-rotate 2s ease-in-out infinite;
+}
+
+.landscape-gate-card h2 {
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.landscape-gate-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+@keyframes landscape-gate-rotate {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
+}
