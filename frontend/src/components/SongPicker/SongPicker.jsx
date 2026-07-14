@@ -19,7 +19,36 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
     () => saved?.song?.id ?? SONG_CATALOG.easy[0]?.id ?? null
   );
   const [query, setQuery] = useState("");
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const [scrollThumb, setScrollThumb] = useState({ top: 0, height: 100 });
   const gridRef = useRef(null);
+
+  const updateScrollState = useCallback(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = grid;
+    const scrollable = scrollHeight - clientHeight;
+
+    setCanScrollUp(scrollTop > 4);
+    setCanScrollDown(scrollTop + clientHeight < scrollHeight - 4);
+
+    if (scrollable <= 0) {
+      setScrollThumb({ top: 0, height: 100 });
+      return;
+    }
+
+    const height = Math.max(18, (clientHeight / scrollHeight) * 100);
+    const top = (scrollTop / scrollable) * (100 - height);
+    setScrollThumb({ top, height });
+  }, []);
+
+  const scrollGrid = useCallback((direction) => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    grid.scrollBy({ top: direction * 200, behavior: "smooth" });
+  }, []);
 
   const handleGridWheel = useCallback((event) => {
     const grid = gridRef.current;
@@ -50,8 +79,19 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
     if (!grid) return undefined;
 
     grid.addEventListener("wheel", handleGridWheel, { passive: false });
-    return () => grid.removeEventListener("wheel", handleGridWheel);
-  }, [handleGridWheel, filteredSongs.length, difficulty]);
+    grid.addEventListener("scroll", updateScrollState, { passive: true });
+
+    const resizeObserver = new ResizeObserver(updateScrollState);
+    resizeObserver.observe(grid);
+
+    updateScrollState();
+
+    return () => {
+      grid.removeEventListener("wheel", handleGridWheel);
+      grid.removeEventListener("scroll", updateScrollState);
+      resizeObserver.disconnect();
+    };
+  }, [handleGridWheel, updateScrollState, filteredSongs.length, difficulty]);
 
   const selectedSong =
     filteredSongs.find((s) => s.id === songId) ?? filteredSongs[0] ?? null;
@@ -94,48 +134,52 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
           </header>
         )}
 
-        <div className="song-picker-tabs" role="tablist" aria-label="Difficulty">
-          {DIFFICULTIES.map((level) => (
-            <button
-              key={level.id}
-              type="button"
-              role="tab"
-              aria-selected={difficulty === level.id}
-              className={
-                difficulty === level.id
-                  ? "song-picker-tab active"
-                  : "song-picker-tab"
-              }
-              onClick={() => handleDifficultyChange(level.id)}
-            >
-              {level.label}
-            </button>
-          ))}
+        <div className="song-picker-toolbar">
+          <div className="song-picker-tabs" role="tablist" aria-label="Difficulty">
+            {DIFFICULTIES.map((level) => (
+              <button
+                key={level.id}
+                type="button"
+                role="tab"
+                aria-selected={difficulty === level.id}
+                className={
+                  difficulty === level.id
+                    ? "song-picker-tab active"
+                    : "song-picker-tab"
+                }
+                onClick={() => handleDifficultyChange(level.id)}
+              >
+                {level.label}
+              </button>
+            ))}
+          </div>
+
+          <label className="song-picker-search-wrap">
+            <span className="song-picker-search-icon" aria-hidden="true">
+              ⌕
+            </span>
+            <input
+              type="search"
+              className="song-picker-search"
+              placeholder="Search songs..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              aria-label="Search songs"
+            />
+            {query && (
+              <button
+                type="button"
+                className="song-picker-search-clear"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </label>
         </div>
 
-        <label className="song-picker-search-wrap">
-          <span className="song-picker-search-icon" aria-hidden="true">
-            ⌕
-          </span>
-          <input
-            type="search"
-            className="song-picker-search"
-            placeholder="Search songs..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            aria-label="Search songs"
-          />
-          {query && (
-            <button
-              type="button"
-              className="song-picker-search-clear"
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-            >
-              ×
-            </button>
-          )}
-        </label>
+        <p className="song-picker-mobile-hint">Tap a song to start playing</p>
 
         <div key={difficulty} className="song-picker-content">
           <h2 className="song-picker-session">{session?.sessionTitle ?? "Session"}</h2>
@@ -145,45 +189,84 @@ export default function SongPicker({ onConfirm, showHeader = true }) {
           ) : filteredSongs.length === 0 ? (
             <p className="song-picker-empty">No songs match &ldquo;{query}&rdquo;.</p>
           ) : (
-            <div ref={gridRef} className="song-grid" data-lenis-prevent>
-              {filteredSongs.map((song, index) => {
-                const isActive = selectedSong?.id === song.id;
-                const locked = !isSongUnlocked(song, pro);
+            <div className="song-grid-wrap">
+              <div ref={gridRef} className="song-grid" data-lenis-prevent>
+                {filteredSongs.map((song, index) => {
+                  const isActive = selectedSong?.id === song.id;
+                  const locked = !isSongUnlocked(song, pro);
 
-                return (
-                  <button
-                    key={song.id}
-                    type="button"
-                    className={
-                      (isActive ? "song-tile active" : "song-tile") +
-                      (locked ? " locked" : "")
-                    }
-                    style={{ animationDelay: `${index * 45}ms` }}
-                    onClick={() => handleSongSelect(song)}
-                    aria-pressed={isActive}
-                  >
-                    <span className="song-tile-index">
-                      {locked ? "🔒" : index + 1}
-                    </span>
-                    <span className="song-tile-art">
-                      <img src={getSongCoverUrl(song.id)} alt="" loading="lazy" />
-                      <span className="song-disc" aria-hidden="true">
-                        <span className="song-disc-ring" />
-                        <span className="song-disc-label">♪</span>
+                  return (
+                    <button
+                      key={song.id}
+                      type="button"
+                      className={
+                        (isActive ? "song-tile active" : "song-tile") +
+                        (locked ? " locked" : "")
+                      }
+                      style={{ animationDelay: `${index * 45}ms` }}
+                      onClick={() => handleSongSelect(song)}
+                      aria-pressed={isActive}
+                    >
+                      <span className="song-tile-index">
+                        {locked ? "🔒" : index + 1}
                       </span>
-                    </span>
-                    <span className="song-tile-title">{song.name}</span>
-                    {locked && <span className="song-tile-badge">PRO</span>}
-                  </button>
-                );
-              })}
+                      <span className="song-tile-art">
+                        <img src={getSongCoverUrl(song.id)} alt="" loading="lazy" />
+                        <span className="song-disc" aria-hidden="true">
+                          <span className="song-disc-ring" />
+                          <span className="song-disc-label">♪</span>
+                        </span>
+                      </span>
+                      <span className="song-tile-title">{song.name}</span>
+                      {locked && <span className="song-tile-badge">PRO</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                className={[
+                  "song-grid-scroll-controls",
+                  !canScrollUp && !canScrollDown && "is-hidden",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <button
+                  type="button"
+                  className="song-scroll-btn"
+                  onClick={() => scrollGrid(-1)}
+                  disabled={!canScrollUp}
+                  aria-label="Scroll up"
+                >
+                  ▲
+                </button>
+                <div className="song-scroll-track">
+                  <div
+                    className="song-scroll-thumb"
+                    style={{
+                      height: `${scrollThumb.height}%`,
+                      top: `${scrollThumb.top}%`,
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="song-scroll-btn"
+                  onClick={() => scrollGrid(1)}
+                  disabled={!canScrollDown}
+                  aria-label="Scroll down"
+                >
+                  ▼
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         <button
           type="button"
-          className="song-picker-start"
+          className="song-picker-start song-picker-start--desktop"
           onClick={handleConfirm}
           disabled={!selectedSong}
         >

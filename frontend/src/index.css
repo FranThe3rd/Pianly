@@ -58,8 +58,27 @@ html.lenis body {
 /* Mobile landscape — maximize room for falling notes + controls panel */
 @media (max-width: 900px) and (orientation: landscape) {
   :root {
-    --navbar-height: 56px;
+    --navbar-height: 48px;
     --piano-height: 108px;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  :root {
+    --navbar-height: 44px;
+  }
+}
+
+/* Songs + playground on phones/tablets — hide nav, reclaim full height.
+   Uses 1279px (not 900px) so large phones in landscape (e.g. iPhone 14 Pro Max
+   at 932px wide) are included. Safe-area inset replaces the nav offset. */
+@media (max-width: 1279px) {
+  .app-immersive {
+    --navbar-height: env(safe-area-inset-top, 0px);
+  }
+
+  .app-immersive .landing-nav {
+    display: none;
   }
 }
 

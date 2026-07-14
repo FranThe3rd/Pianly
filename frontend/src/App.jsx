@@ -1,5 +1,5 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { SubscriptionProvider } from "./context/SubscriptionContext";
 import { LenisProvider } from "./context/LenisContext";
@@ -13,9 +13,14 @@ import Playground from "./pages/Playground/Playground.jsx";
 import Pricing from "./pages/Pricing/Pricing.jsx";
 import PricingReturn from "./pages/Pricing/PricingReturn.jsx";
 
+const IMMERSIVE_PATHS = ["/songs", "/playground"];
+
 function AppRoutes() {
+  const { pathname } = useLocation();
+  const isImmersive = IMMERSIVE_PATHS.some((path) => pathname.startsWith(path));
+
   return (
-    <>
+    <div className={isImmersive ? "app-immersive" : undefined}>
       <LandingNav />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -33,7 +38,7 @@ function AppRoutes() {
           }
         />
       </Routes>
-    </>
+    </div>
   );
 }
 

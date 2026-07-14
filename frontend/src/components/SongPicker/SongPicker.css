@@ -22,10 +22,25 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
+  min-height: 0;
   padding: 24px clamp(20px, 4vw, 48px);
   border: none;
   border-radius: 0;
   background: transparent;
+}
+
+.song-picker-toolbar {
+  flex-shrink: 0;
+}
+
+.song-picker-mobile-hint {
+  display: none;
+  flex-shrink: 0;
+  margin: 0 0 8px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .song-picker-header {
@@ -170,6 +185,70 @@
   color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
   animation: song-picker-fade-up 0.35s ease both;
+}
+
+.song-grid-wrap {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+}
+
+.song-grid-scroll-controls {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  gap: 6px;
+}
+
+.song-scroll-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.song-scroll-btn:active:not(:disabled) {
+  background: var(--purple-accent);
+}
+
+.song-scroll-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.song-scroll-track {
+  position: relative;
+  flex: 1;
+  width: 8px;
+  min-height: 80px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.song-scroll-thumb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 8px rgba(123, 44, 255, 0.35);
+  transition: top 0.12s ease, height 0.12s ease;
+}
+
+.song-grid-scroll-controls.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .song-grid {
@@ -385,62 +464,262 @@
   }
 }
 
-@media (max-width: 640px) {
+.song-picker-start--desktop {
+  display: block;
+}
+
+@media (max-width: 1279px) {
+  .song-picker-start--desktop {
+    display: none;
+  }
+
+  .song-picker-mobile-hint {
+    display: block;
+  }
+
+  .song-grid-scroll-controls {
+    display: flex;
+  }
+
+  .song-grid {
+    padding-right: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.08);
+  }
+
+  .song-grid::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .song-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+  }
+
+  .song-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+  }
+}
+
+/* iPhone / small phones — portrait */
+@media (max-width: 600px) {
   .song-picker-panel {
-    padding: 20px 16px 16px;
+    padding: 12px 14px 14px;
   }
 
-  .song-tile {
-    grid-template-columns: 40px 64px minmax(0, 1fr);
-    min-height: 64px;
+  .song-picker-header {
+    margin-bottom: 12px;
   }
 
-  .song-tile-art {
-    width: 64px;
-    height: 64px;
+  .song-picker-header h1 {
+    margin-bottom: 4px;
+    font-size: 1.35rem;
   }
 
-  .song-tile-title {
-    padding: 8px 12px;
+  .song-picker-header p {
     font-size: 13px;
-  }
-}
-
-@media (max-width: 420px) {
-  .song-tile {
-    grid-template-columns: 36px 56px minmax(0, 1fr);
-    min-height: 56px;
+    line-height: 1.35;
   }
 
-  .song-tile-art {
-    width: 56px;
-    height: 56px;
-  }
-
-  .song-disc {
-    width: 22px;
-    height: 22px;
-    right: 4px;
-    bottom: 4px;
-  }
-}
-
-@media (max-width: 1279px) and (orientation: landscape) {
-  .song-picker-panel {
-    padding: 12px max(12px, env(safe-area-inset-right))
-      max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-  }
-
-  .song-picker-session {
+  .song-picker-tabs {
+    gap: 6px;
     margin-bottom: 10px;
   }
 
-  .song-tile {
-    min-height: 58px;
+  .song-picker-tab {
+    padding: 8px 14px;
+    font-size: 12px;
   }
 
-  .song-picker-start {
-    margin-top: 12px;
-    padding: 12px 20px;
+  .song-picker-tab.active {
+    transform: none;
+  }
+
+  .song-picker-search-wrap {
+    height: 40px;
+    margin-bottom: 8px;
+  }
+
+  .song-picker-session {
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+
+  .song-tile {
+    grid-template-columns: 36px 52px minmax(0, 1fr);
+    min-height: 52px;
+    gap: 0;
+  }
+
+  .song-tile-art {
+    width: 52px;
+    height: 52px;
+  }
+
+  .song-disc {
+    display: none;
+  }
+
+  .song-tile-title {
+    padding: 6px 10px;
+    font-size: 13px;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* iPhone landscape — maximize room for the song list */
+@media (max-height: 520px) and (orientation: landscape) {
+  .song-picker-panel {
+    padding: 6px 10px 8px;
+  }
+
+  .song-picker-header {
+    display: none;
+  }
+
+  .song-picker-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .song-picker-tabs {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin-bottom: 0;
+  }
+
+  .song-picker-tab {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .song-picker-tab.active {
+    transform: none;
+  }
+
+  .song-picker-search-wrap {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    margin-bottom: 0;
+    padding: 0 10px;
+  }
+
+  .song-picker-search {
+    font-size: 13px;
+  }
+
+  .song-picker-mobile-hint {
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  .song-picker-session {
+    display: none;
+  }
+
+  .song-picker-content {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .song-grid-wrap {
+    min-height: 0;
+  }
+
+  .song-tile {
+    grid-template-columns: 28px 44px minmax(0, 1fr);
+    min-height: 44px;
+    border-radius: 8px;
+  }
+
+  .song-tile-art {
+    width: 44px;
+    height: 44px;
+  }
+
+  .song-tile-index {
+    font-size: 12px;
+  }
+
+  .song-tile-title {
+    padding: 4px 8px;
+    font-size: 12px;
+    -webkit-line-clamp: 1;
+  }
+
+  .song-tile-badge {
+    top: 4px;
+    right: 6px;
+    padding: 2px 6px;
+    font-size: 9px;
+  }
+
+  .song-disc {
+    display: none;
+  }
+
+  .song-scroll-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .song-scroll-track {
+    min-height: 48px;
+    width: 6px;
+  }
+
+  .song-grid-scroll-controls {
+    width: 30px;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 1279px) and (orientation: landscape) and (min-height: 521px) {
+  .song-picker-panel {
+    padding: 10px 14px 12px;
+  }
+
+  .song-picker-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .song-picker-header p {
+    display: none;
+  }
+
+  .song-picker-header {
+    margin-bottom: 10px;
+  }
+
+  .song-picker-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .song-picker-tabs {
+    margin-bottom: 0;
+  }
+
+  .song-picker-search-wrap {
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    margin-bottom: 0;
+  }
+
+  .song-picker-session {
+    margin-bottom: 6px;
+  }
+
+  .song-tile {
+    min-height: 52px;
   }
 }

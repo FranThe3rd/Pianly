@@ -12,6 +12,7 @@ import {
   PIANO_START_MIDI,
   PIANO_END_MIDI,
 } from "../../utils/pianoNotes";
+import MobileSiteNav from "../MobileSiteNav/MobileSiteNav";
 import "./MidiVisualizer.css";
 
 const LOOK_AHEAD = 4;
@@ -1443,6 +1444,10 @@ export default function MidiVisualizer({
 
                     <div className="midi-fullscreen-section">
                       {settingsPanelContent}
+                    </div>
+
+                    <div className="midi-fullscreen-section">
+                      <MobileSiteNav onNavigate={() => setSettingsOpen(false)} />
                     </div>
                   </div>
                 </div>

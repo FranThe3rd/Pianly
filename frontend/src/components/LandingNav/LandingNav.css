@@ -142,3 +142,24 @@
     font-size: 11px;
   }
 }
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .landing-nav {
+    gap: 12px;
+    padding: 0 12px;
+  }
+
+  .landing-logo {
+    font-size: 16px;
+  }
+
+  .landing-nav-upgrade {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+
+  .landing-nav-cta {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+}
