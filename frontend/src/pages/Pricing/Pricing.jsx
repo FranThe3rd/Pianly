@@ -111,13 +111,20 @@ export default function Pricing() {
                 )}
               </div>
             ) : !showCheckout ? (
-              <button
-                type="button"
-                className="pricing-cta"
-                onClick={() => setShowCheckout(true)}
-              >
-                Upgrade for $8/month
-              </button>
+              stripePromise ? (
+                <button
+                  type="button"
+                  className="pricing-cta"
+                  onClick={() => setShowCheckout(true)}
+                >
+                  Upgrade for $8/month
+                </button>
+              ) : (
+                <p className="pricing-note">
+                  Checkout is unavailable — set{" "}
+                  <code>VITE_STRIPE_PUBLISHABLE_KEY</code> for this build.
+                </p>
+              )
             ) : null}
           </AnimatedEnter>
 

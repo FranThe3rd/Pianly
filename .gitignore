@@ -1,1 +1,22 @@
 .dev/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Editor backups
+*~
+
+# Frontend build
+frontend/dist/
+frontend/node_modules/
+
+# Backend build
+backend/target/

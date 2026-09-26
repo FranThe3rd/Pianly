@@ -18,10 +18,10 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
-  secret-key: ${JWT_SECRET_KEY:REDACTED}
+  secret-key: ${JWT_SECRET_KEY:}
 
 stripe:
-  secret-key: ${STRIPE_SECRET_KEY:sk_test_your_secret_key_here}
+  secret-key: ${STRIPE_SECRET_KEY:}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   price-amount: 800
   currency: usd
