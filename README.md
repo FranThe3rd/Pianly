@@ -1,7 +1,5 @@
 # Pianly
 
-**[pianly.net](https://www.pianly.net)** — practice piano by playing real songs, not watching hours of video.
-
 Pianly is a browser app that shows you *what* to play while you play it. Pick a piece, watch the notes scroll toward the keys, and hit them on a on-screen piano, your computer keyboard, a USB MIDI keyboard, or even through your mic (it listens for pitch and tells you if you’re on the right note). Wrong notes show up as misses so you can fix them in the moment instead of drilling bad muscle memory later.
 
 It’s meant for everyday practice: open a song, play, repeat. Not a full lesson platform with grades and curricula — more like a smart sheet-music player that actually reacts to you.
